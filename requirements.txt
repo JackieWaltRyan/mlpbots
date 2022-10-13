@@ -1,0 +1,8 @@
+PyNaCl
+discord-components-mirror
+discord-webhook
+discord.py==1.7.3
+discord==1.7.3
+fuzzywuzzy
+pytz
+youtube_dl
