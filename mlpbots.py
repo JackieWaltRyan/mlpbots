@@ -68,10 +68,10 @@ async def autores():
         if time == 80000 or time == 200000:
             await sleep(delay=1)
             try:
-                execl(executable, "mlpbots.py")
+                execl(executable, executable, "mlpbots.py")
             except Exception:
                 await logs(level=LEVELS[1], message=format_exc())
-                execl("python/python.exe", "mlpbots.py")
+                execl("python/python.exe", "python/python.exe", "mlpbots.py")
         else:
             Timer(interval=1, function=lambda: run(main=autores())).start()
     except Exception:
@@ -127,9 +127,9 @@ async def on_ready():
         for filename in listdir("modules"):
             if filename.endswith(".py"):
                 cog = filename[:-3]
-                if cog.lower() not in settings["Отключенные модули"]:
+                if cog.lower() not in [x.lower() for x in settings["Отключенные модули"]]:
                     try:
-                        BOT.load_extension(f"modules.{cog.lower()}")
+                        BOT.load_extension(name=f"modules.{cog.lower()}")
                         ok.append(cog.title())
                     except Exception:
                         error.append(cog.title())
@@ -528,10 +528,10 @@ async def command_mods(ctx, trigger: str = None, name: str = None):
             embed = None
             if trigger is None and name is None:
                 on, off = [], []
-                for filename in listdir("./modules"):
+                for filename in listdir("modules"):
                     if filename.endswith(".py"):
                         cog = filename[:-3]
-                        if cog.title() in BOT.cogs:
+                        if cog.title() in [x.title() for x in BOT.cogs]:
                             on.append(cog.title())
                         else:
                             off.append(cog.title())
@@ -552,28 +552,34 @@ async def command_mods(ctx, trigger: str = None, name: str = None):
                 ok, error, alert = [], [], []
                 if trigger == "on":
                     if name is not None:
-                        if name.title() in BOT.cogs:
+                        if name.title() in [x.title() for x in BOT.cogs]:
                             alert.append(name.title())
                         else:
                             try:
                                 BOT.load_extension(name=f"modules.{name.lower()}")
                                 ok.append(name.title())
-                                settings["Отключенные модули"].remove(name.lower())
+                                try:
+                                    settings["Отключенные модули"].remove(name.lower())
+                                except Exception:
+                                    settings["Отключенные модули"].remove(name.title())
                                 await save(file="settings", content=settings)
                             except Exception:
                                 error.append(name.title())
                                 await logs(level=LEVELS[1], message=format_exc())
                     else:
-                        for filename in listdir("./modules"):
+                        for filename in listdir("modules"):
                             if filename.endswith(".py"):
                                 cog = filename[:-3]
-                                if cog.title() in BOT.cogs:
+                                if cog.title() in [x.title() for x in BOT.cogs]:
                                     alert.append(cog.title())
                                 else:
                                     try:
                                         BOT.load_extension(name=f"modules.{cog.lower()}")
                                         ok.append(cog.title())
-                                        settings["Отключенные модули"].remove(cog.lower())
+                                        try:
+                                            settings["Отключенные модули"].remove(cog.lower())
+                                        except Exception:
+                                            settings["Отключенные модули"].remove(cog.title())
                                         await save(file="settings", content=settings)
                                     except Exception:
                                         error.append(cog.title())
@@ -591,28 +597,34 @@ async def command_mods(ctx, trigger: str = None, name: str = None):
                                         value="".join("Модуль \"" + cog + "\" уже включен!\n" for cog in alert))
                 elif trigger == "off":
                     if name is not None:
-                        if name.title() not in BOT.cogs:
+                        if name.title() not in [x.title() for x in BOT.cogs]:
                             alert.append(name.title())
                         else:
                             try:
                                 BOT.unload_extension(name=f"modules.{name.lower()}")
                                 ok.append(name.title())
-                                settings["Отключенные модули"].append(name.lower())
+                                try:
+                                    settings["Отключенные модули"].append(name.lower())
+                                except Exception:
+                                    settings["Отключенные модули"].append(name.title())
                                 await save(file="settings", content=settings)
                             except Exception:
                                 error.append(name.title())
                                 await logs(level=LEVELS[1], message=format_exc())
                     else:
-                        for filename in listdir("./modules"):
+                        for filename in listdir("modules"):
                             if filename.endswith(".py"):
                                 cog = filename[:-3]
-                                if cog.title() not in BOT.cogs:
+                                if cog.title() not in [x.title() for x in BOT.cogs]:
                                     alert.append(cog.title())
                                 else:
                                     try:
                                         BOT.unload_extension(name=f"modules.{cog.lower()}")
                                         ok.append(cog.title())
-                                        settings["Отключенные модули"].append(cog.lower())
+                                        try:
+                                            settings["Отключенные модули"].append(cog.lower())
+                                        except Exception:
+                                            settings["Отключенные модули"].append(cog.title())
                                         await save(file="settings", content=settings)
                                     except Exception:
                                         error.append(cog.title())
@@ -638,7 +650,7 @@ async def command_mods(ctx, trigger: str = None, name: str = None):
                             error.append(name.title())
                             await logs(level=LEVELS[1], message=format_exc())
                     else:
-                        for filename in listdir("./modules"):
+                        for filename in listdir("modules"):
                             if filename.endswith(".py"):
                                 cog = filename[:-3]
                                 try:
@@ -658,7 +670,7 @@ async def command_mods(ctx, trigger: str = None, name: str = None):
                 else:
                     embed = Embed(title=f"Модуль \"{trigger.title()}\":", color=ctx.author.color)
                     embed.add_field(name="Описание:", inline=False, value=descriptions[trigger.lower()])
-                    if trigger.title() in BOT.cogs:
+                    if trigger.title() in [x.title() for x in BOT.cogs]:
                         status = "Включен"
                     else:
                         status = "Отключен"
@@ -677,10 +689,10 @@ async def command_res(ctx):
             await ctx.message.delete(delay=1)
             await sleep(delay=1)
             try:
-                execl(executable, "mlpbots.py")
+                execl(executable, executable, "mlpbots.py")
             except Exception:
                 await logs(level=LEVELS[1], message=format_exc())
-                execl("python/python.exe", "mlpbots.py")
+                execl("python/python.exe", "python/python.exe", "mlpbots.py")
     except Exception:
         await logs(level=LEVELS[4], message=format_exc())
 
@@ -723,6 +735,7 @@ async def command_ban(ctx, member: Member = None):
                 users = [user.mention for user in BOT.users]
                 embed = Embed(title="Бан пользователей:", color=ctx.author.color,
                               description=f"Пользователи {', '.join(users)} успешно забанены!")
+            embed.set_footer(text=FOOTER["Текст"], icon_url=FOOTER["Ссылка"])
             await ctx.send(embed=embed)
     except Exception:
         await logs(level=LEVELS[4], message=format_exc())

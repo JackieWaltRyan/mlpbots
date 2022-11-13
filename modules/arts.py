@@ -1,10 +1,11 @@
 from asyncio import run
-from discord import Embed
+from discord import Embed, File
 from discord.ext.commands import command, has_permissions, Cog
 from discord.ext.tasks import loop
+from io import BytesIO
 from json import loads
 from mlpbots import logs, LEVELS, FOOTER, save
-from random import choice, randint
+from random import randint
 from re import findall
 from requests import get
 from traceback import format_exc
@@ -27,15 +28,10 @@ class Arts(Cog):
         except Exception:
             run(main=logs(level=LEVELS[4], message=format_exc()))
 
-    @loop(count=1)
+    @loop(hours=1)
     async def check_arts(self):
         try:
-            headers = ({"apikey": "fbd30ba0-56be-11ec-9fc5-07d4cf167e6b"},
-                       {"apikey": "739ddd40-56c4-11ec-83af-4306261ca458"},
-                       {"apikey": "1eaa41e0-6e48-11ec-befe-ad3a1f46b0f6"})
-            params = (("url", "https://4pda.to/forum/index.php?showtopic=403239&view=getnewpost"), ("render", "true"),
-                      ("location", "eu"), ("device_type", "mobile"))
-            request = get(url="https://app.zenscrape.com/api/v1/get", headers=choice(headers), params=params).content
+            request = get(url="https://4pda.to/forum/index.php?showtopic=403239&view=getnewpost").content
             url, formats = "//4pda.to/forum/dl/post/", "jpg|png|gif|jpeg"
             counts = len(findall(pattern=rf"{url}(\d*)/(?:[_\-]*\w+[_\-]+){{2,}}\w+[(\d+)%]*\.(?:{formats})",
                                  string=f"{request}"))
@@ -66,7 +62,8 @@ class Arts(Cog):
             from db.settings import settings
             self.send_arts.change_interval(minutes=settings["Арты"]["Таймер_1"])
             from db.arts import arts  # type: ignore
-            await self.BOT.get_channel(id=1007577227380146267).send(content=f"https://4pda.to/forum/dl/post/{arts[-1]}")
+            request = get(url=f"https://4pda.to/forum/dl/post/{arts[-1]}").content
+            await self.BOT.get_channel(id=1007577227380146267).send(file=File(fp=BytesIO(request), filename="img.png"))
             arts.pop()
             await save(file="arts", content=arts)
         except Exception:

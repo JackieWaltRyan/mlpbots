@@ -61,19 +61,18 @@ class Player(Cog):
             content = loads(s=get(url="https://everhoof.ru/api/graphql", params=params).text)["data"]
             if len(content["getCalendarEvents"]) > 0:
                 start = int(str(content["getCalendarEvents"][0]["startsAt"])[:10])
-                end = int(str(content["getCalendarEvents"][0]["endsAt"])[:10])
-                if start <= int(time()) <= end:
+                if int(time()) > start:
                     from db.settings import settings
                     if settings["Триггер"] < start:
-                        members = ""
+                        notice = ""
                         from db.members import members
                         for member in members:
                             if members[member]["Уведомления"]:
-                                members += f"<@{member}>, "
+                                notice += f"<@{member}>, "
                         await self.BOT.get_channel(id=1007585194863251468).send(
-                            content=f"{members}\nСейчас в прямом эфире "
+                            content=f"{notice}\nСейчас в прямом эфире "
                                     f"**\"{content['getCalendarEvents'][0]['summary']}\"**!")
-                        settings["Триггер"] = end
+                        settings["Триггер"] = start
                         await save(file="settings", content=settings)
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
@@ -158,7 +157,8 @@ class Player(Cog):
                         self.vc = None
                         try:
                             for vc in self.BOT.voice_clients:
-                                await vc.disconnect()
+                                vc.cleanup()
+                                await vc.disconnect(force=True)
                         except Exception:
                             await logs(level=LEVELS[1], message=format_exc())
                         try:
@@ -201,7 +201,8 @@ class Player(Cog):
                     self.vc = None
                     try:
                         for vc in self.BOT.voice_clients:
-                            await vc.disconnect()
+                            vc.cleanup()
+                            await vc.disconnect(force=True)
                     except Exception:
                         await logs(level=LEVELS[1], message=format_exc())
                     try:
@@ -225,8 +226,7 @@ class Player(Cog):
                         current = content["getCurrentPlaying"]["current"]
                         if content["getCurrentPlaying"]["live"]["isLive"]:
                             start = int(str(content["getCalendarEvents"][0]["startsAt"])[:10])
-                            end = int(str(content["getCalendarEvents"][0]["endsAt"])[:10])
-                            if start <= int(time()) <= end:
+                            if int(time()) > start:
                                 artist, title, delta = "В эфире", content["getCalendarEvents"][0]["summary"], 60
                         else:
                             artist, title = current["artist"], current["title"]

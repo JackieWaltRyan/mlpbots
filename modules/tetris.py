@@ -129,7 +129,6 @@ class Tetris(Cog):
 
                     embed_2 = Embed(title="Тетрис:", color=ctx.author.color)
                     post = await ctx.send(embed=embed_2, components=button(st=style, ds=disabled))
-                    print(post)
                     control = await ctx.send(components=[[Button(emoji="⬅️", id="left"),
                                                           Button(emoji="➡️", id="right")]])
                     self.posts.update([(control.id, post.id)])

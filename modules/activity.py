@@ -60,17 +60,18 @@ class Activity(Cog):
                             members[member.id]["Бот"] = True
                         if members[member.id]["Статус"]:
                             if (datetime.utcnow() - members[member.id]["Время последнего сообщения"]).days >= 7:
-                                roles = [role.id for role in member.roles[1:]]
-                                members[member.id].update({"Статус": False, "Роли": roles})
-                                for role_id in roles:
+                                if member.id not in [868148805722337320, 868150460735971328]:
+                                    roles = [role.id for role in member.roles[1:]]
+                                    members[member.id].update({"Статус": False, "Роли": roles})
+                                    for role_id in roles:
+                                        try:
+                                            await member.remove_roles(get(iterable=member.guild.roles, id=role_id))
+                                        except Exception:
+                                            await logs(level=LEVELS[1], message=format_exc())
                                     try:
-                                        await member.remove_roles(get(iterable=member.guild.roles, id=role_id))
+                                        await member.add_roles(get(iterable=member.guild.roles, id=1007586338238898187))
                                     except Exception:
                                         await logs(level=LEVELS[1], message=format_exc())
-                                try:
-                                    await member.add_roles(get(iterable=member.guild.roles, id=1007586338238898187))
-                                except Exception:
-                                    await logs(level=LEVELS[1], message=format_exc())
                 for channel in guild.channels:
                     if str(channel.type) == "text":
                         async for message in channel.history(limit=1000000000):
