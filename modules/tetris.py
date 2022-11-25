@@ -17,11 +17,11 @@ class Tetris(Cog):
     @Cog.listener()
     async def on_button_click(self, interaction):
         try:
-            if interaction.component.id == "left" or interaction.component.id == "right":
+            if interaction.component.id == "tetris_left" or interaction.component.id == "tetris_right":
                 post_id = self.posts[interaction.message.id]
                 position, member, style = self.positions[post_id], self.members[post_id], self.styles[post_id]
                 if position is not None:
-                    if interaction.component.id == "left":
+                    if interaction.component.id == "tetris_left":
                         if member is None:
                             member = interaction.user
                         if interaction.user == member:
@@ -36,7 +36,7 @@ class Tetris(Cog):
                                 await interaction.respond()
                             except Exception:
                                 pass
-                    if interaction.component.id == "right":
+                    if interaction.component.id == "tetris_right":
                         if member is None:
                             member = interaction.user
                         if interaction.user == member:
@@ -129,8 +129,8 @@ class Tetris(Cog):
 
                     embed_2 = Embed(title="Тетрис:", color=ctx.author.color)
                     post = await ctx.send(embed=embed_2, components=button(st=style, ds=disabled))
-                    control = await ctx.send(components=[[Button(emoji="⬅️", id="left"),
-                                                          Button(emoji="➡️", id="right")]])
+                    control = await ctx.send(components=[[Button(emoji="⬅️", id="tetris_left"),
+                                                          Button(emoji="➡️", id="tetris_right")]])
                     self.posts.update([(control.id, post.id)])
                     self.styles.update([(post.id, style)])
                     self.members.update([(post.id, None)])

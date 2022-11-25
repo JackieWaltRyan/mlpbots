@@ -34,7 +34,9 @@ class Rainbow(Cog):
         try:
             for member in self.members:
                 try:
-                    await member.add_roles(get(iterable=member.guild.roles, id=ROLES[self.a]))
+                    from db.members import members
+                    if members[member.id]["Статус"]:
+                        await member.add_roles(get(iterable=member.guild.roles, id=ROLES[self.a]))
                     await member.remove_roles(get(iterable=member.guild.roles, id=ROLES[self.b]))
                 except Exception:
                     await logs(level=LEVELS[1], message=format_exc())

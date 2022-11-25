@@ -41,6 +41,11 @@ async def logs(level, message, file=None):
         if 200000 <= time < 240000 or 0 <= time < 80000:
             username = "Принцесса Луна"
             avatar_url = "https://cdn.discordapp.com/attachments/1021085537802649661/1021090386753634454/luna.jpg"
+        try:
+            username = str(BOT.user.name)
+            avatar_url = str(BOT.user.avatar_url)
+        except Exception:
+            await logs(level=LEVELS[1], message=format_exc())
         webhook = DiscordWebhook(username=username, avatar_url=avatar_url, url="")
         webhook.add_embed(embed=DiscordEmbed(title=level["name"], description=str(message), color=level["color"]))
         if file is not None:
@@ -48,7 +53,7 @@ async def logs(level, message, file=None):
                 webhook.add_file(file=backup_file.read(), filename=file)
         webhook.execute()
     except Exception:
-        print(format_exc())
+        await logs(level=LEVELS[4], message=format_exc())
 
 
 async def backup():
@@ -102,15 +107,11 @@ async def save(file, content):
 
 
 @BOT.event
-async def on_connect():
+async def on_ready():
     try:
         await autores()
     except Exception:
         await logs(level=LEVELS[4], message=format_exc())
-
-
-@BOT.event
-async def on_ready():
     try:
         DiscordComponents(bot=BOT)
     except Exception:
@@ -181,8 +182,8 @@ async def on_message(message):
                         mes = SPAM[message.author.id]["messages"]
                         mes_1 = [len(mes[1]) + 1, len(mes[1]), len(mes[1]) - 1]
                         mes_2 = [len(mes[2]) + 1, len(mes[2]), len(mes[2]) - 1]
-                        if token_sort_ratio(mes[0], mes[1]) >= 90 or len(mes[0]) in mes_1:
-                            if token_sort_ratio(mes[1], mes[2]) >= 90 or len(mes[1]) in mes_2:
+                        if token_sort_ratio(mes[0], mes[1]) >= 95 or len(mes[0]) in mes_1:
+                            if token_sort_ratio(mes[1], mes[2]) >= 95 or len(mes[1]) in mes_2:
                                 try:
                                     await message.delete()
                                 except Exception:
@@ -210,6 +211,10 @@ async def on_raw_reaction_add(payload):
                 like = int(reaction.count)
             if reaction.emoji == "👎":
                 dlike = int(reaction.count)
+            try:
+                await post.add_reaction(emoji=reaction)
+            except Exception:
+                await logs(level=LEVELS[1], message=format_exc())
         from db.members import members
         actives, bots = 0, 0
         for member in members.values():
@@ -228,19 +233,19 @@ async def on_raw_reaction_add(payload):
 @BOT.event
 async def on_member_join(member):
     try:
-        arts = ["https://4pda.to/forum/dl/post/23008740/cute_pony_by_chaosangeldesu_dek2j7l.png",
-                "https://4pda.to/forum/dl/post/25533516/filly_coco_pommel_by_vinilyart_df4y1wk.png",
-                "https://4pda.to/forum/dl/post/25533514/commission___bizuni_by_joaothejohn_df4xc7e.png",
-                "https://4pda.to/forum/dl/post/23405861/princess_luna_by_zefir_ka_deno6rb.png",
-                "https://4pda.to/forum/dl/post/23373721/smug_pipp_petals_by_symbianl_dendc89-fullview.jpg",
-                "https://4pda.to/forum/dl/post/22269835/shortcut_twi_by_nendo23_deerr4s.png",
-                "https://4pda.to/forum/dl/post/22783790/fluttershy_by_nendo23_dei9feu.png",
-                "https://4pda.to/forum/dl/post/22541522/skittles_by_itskittyrosie_degk0yh.jpg",
-                "https://4pda.to/forum/dl/post/25558988/hoodie_cloud_by_higglytownhero_df57ev4.png",
-                "https://4pda.to/forum/dl/post/22962609/pegabrushies___patreon_reward___by_ravensunart_dejphr2.png",
-                "https://4pda.to/forum/dl/post/25546383/fluttershy_waited_by_symbianl_df51nyw-fullview.jpg",
-                "https://4pda.to/forum/dl/post/25558985/coloratura__by_therealdjthed_df575rj.png",
-                "https://4pda.to/forum/dl/post/23392532/sunset_in_raincoat_by_howxu_denkwbm.png"]
+        arts = ["https://cdn.discordapp.com/attachments/1021085537802649661/1044627897136205914/hoodie_cloud.png",
+                "https://cdn.discordapp.com/attachments/1021085537802649661/1044627897832443924/skittles.jpg",
+                "https://cdn.discordapp.com/attachments/1021085537802649661/1044627898151227482/smug_pipp_petals.jpg",
+                "https://cdn.discordapp.com/attachments/1021085537802649661/1044627898654531674/sunset_in_raincoat.png",
+                "https://cdn.discordapp.com/attachments/1021085537802649661/1044627899094945792/coloratura.png",
+                "https://cdn.discordapp.com/attachments/1021085537802649661/1044627899514359860/commission_bizuni.png",
+                "https://cdn.discordapp.com/attachments/1021085537802649661/1044627900189659217/cute_pony.png",
+                "https://cdn.discordapp.com/attachments/1021085537802649661/1044627900831371374/filly_coco_pomme.png",
+                "https://cdn.discordapp.com/attachments/1021085537802649661/1044627901288566784/fluttershy.png",
+                "https://cdn.discordapp.com/attachments/1021085537802649661/1044627901628293220/fluttershy_waited.jpg",
+                "https://cdn.discordapp.com/attachments/1021085537802649661/1044627902685253733/shortcut_twi.png",
+                "https://cdn.discordapp.com/attachments/1021085537802649661/1044627903117271171/pegabrushies.png",
+                "https://cdn.discordapp.com/attachments/1021085537802649661/1044627903775785091/princess_luna.png"]
         embed = Embed(title="В наш клуб присоединилась милая поняшка!", color=0xBA55D3,
                       description=f"Поприветствуем: {member.mention}!")
         embed.set_thumbnail(url=member.avatar_url)

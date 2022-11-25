@@ -153,6 +153,9 @@ class Activity(Cog):
                                                               id=1007586338238898187))
                     except Exception:
                         await logs(level=LEVELS[1], message=format_exc())
+                    from db.members import members
+                    members[message.author.id]["Статус"] = True
+                    await save(file="members", content=members)
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
 

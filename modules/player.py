@@ -46,8 +46,8 @@ class Player(Cog):
             embed.add_field(name="Текущий статус:", value=f"{status}")
             embed.set_thumbnail(url="https://discord.com/assets/a6d05968d7706183143518d96c9f066e.svg")
             embed.set_footer(text=FOOTER["Текст"], icon_url=FOOTER["Ссылка"])
-            await interaction.send(embed=embed, components=[[Button(emoji="🔔", id="notifyon"),
-                                                             Button(emoji="🔕", id="notifyoff")]])
+            await interaction.send(embed=embed, components=[[Button(emoji="🔔", id="subscribe_on"),
+                                                             Button(emoji="🔕", id="subscribe_off")]])
             if self.vc:
                 pass
         except Exception:
@@ -186,10 +186,10 @@ class Player(Cog):
                                               f"Ссылка: {queue[key]['webpage_url']}")
                         embed.set_footer(text=FOOTER["Текст"], icon_url=FOOTER["Ссылка"])
                         post = await self.BOT.get_channel(id=1007585194863251468).send(embed=embed, components=[[
-                            Button(emoji="▶️", style=ButtonStyle.blue, id="play"),
-                            Button(emoji="⏸️", style=ButtonStyle.blue, id="pause"),
-                            Button(emoji="⏭️", style=ButtonStyle.blue, id="next"),
-                            Button(label="Очередь", style=ButtonStyle.green)]])
+                            Button(emoji="▶️", id="player_play", style=ButtonStyle.blue),
+                            Button(emoji="⏸️", id="player_pause", style=ButtonStyle.blue),
+                            Button(emoji="⏭️", id="player_next", style=ButtonStyle.blue),
+                            Button(label="Очередь", id="player_queue", style=ButtonStyle.green)]])
                         settings["Плеер"] = post.id
                         await save(file="settings", content=settings)
                         duration = queue[key]["duration"]
@@ -257,8 +257,8 @@ class Player(Cog):
                     embed.set_footer(text=FOOTER["Текст"], icon_url=FOOTER["Ссылка"])
                     try:
                         post = await self.BOT.get_channel(id=1007585194863251468).send(embed=embed, components=[
-                            [Button(label="История", style=ButtonStyle.green),
-                             Button(emoji="⚙", style=ButtonStyle.blue, id="settings")]])
+                            [Button(label="История", id="player_history", style=ButtonStyle.green),
+                             Button(emoji="⚙", id="player_settings", style=ButtonStyle.blue)]])
                         settings["Плеер"] = post.id
                         await save(file="settings", content=settings)
                     except Exception:
@@ -270,7 +270,7 @@ class Player(Cog):
     @Cog.listener()
     async def on_button_click(self, interaction):
         try:
-            if interaction.component.id == "play":
+            if interaction.component.id == "player_play":
                 try:
                     self.vc.resume()
                     await interaction.respond()
@@ -279,7 +279,7 @@ class Player(Cog):
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
         try:
-            if interaction.component.id == "pause":
+            if interaction.component.id == "player_pause":
                 try:
                     self.vc.pause()
                     await interaction.respond()
@@ -288,7 +288,7 @@ class Player(Cog):
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
         try:
-            if interaction.component.id == "next":
+            if interaction.component.id == "player_next":
                 try:
                     self.player.restart()
                     await interaction.respond()
@@ -297,7 +297,7 @@ class Player(Cog):
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
         try:
-            if interaction.component.label == "Очередь":
+            if interaction.component.id == "player_queue":
                 from db.queue import queue
                 embeds, i = [], 0
                 pages = int(len(queue) / 24)
@@ -386,7 +386,7 @@ class Player(Cog):
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
         try:
-            if interaction.component.label == "Да":
+            if interaction.component.id == "clear_queue":
                 from db.queue import queue
                 queue = {}
                 await save(file="queue", content=queue)
@@ -396,7 +396,7 @@ class Player(Cog):
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
         try:
-            if interaction.component.label == "История":
+            if interaction.component.id == "player_history":
                 embed = Embed(title="История:", color=interaction.user.color)
                 try:
                     params = {"operationName": "", "variables": {}, "query": "{getTracksHistory {track {text}}}"}
@@ -414,12 +414,12 @@ class Player(Cog):
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
         try:
-            if interaction.component.id == "settings":
+            if interaction.component.id == "player_settings":
                 await self.subscribe(interaction=interaction)
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
         try:
-            if interaction.component.id == "notifyon":
+            if interaction.component.id == "subscribe_on":
                 from db.members import members
                 members[interaction.user.id]["Уведомления"] = True
                 await save(file="members", content=members)
@@ -427,7 +427,7 @@ class Player(Cog):
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
         try:
-            if interaction.component.id == "notifyoff":
+            if interaction.component.id == "subscribe_off":
                 from db.members import members
                 members[interaction.user.id]["Уведомления"] = False
                 await save(file="members", content=members)
@@ -440,7 +440,7 @@ class Player(Cog):
         try:
             if interaction.values[0] == "Все треки":
                 await interaction.send(content="Вы действительно хотите полностью очистить очередь?",
-                                       components=[Button(label="Да", style=ButtonStyle.red)])
+                                       components=[Button(label="Да", id="clear_queue", style=ButtonStyle.red)])
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
         try:

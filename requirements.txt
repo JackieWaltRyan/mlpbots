@@ -1,8 +1,9 @@
-PyNaCl
-discord-components-mirror
-discord-webhook
+discord-components-mirror==2.1.5
+discord-webhook==1.0.0
 discord.py==1.7.3
 discord==1.7.3
-fuzzywuzzy
-pytz
-youtube_dl
+fuzzywuzzy==0.18.0
+Pillow==9.3.0
+PyNaCl==1.5.0
+pytz==2022.6
+youtube-dl==2021.12.17

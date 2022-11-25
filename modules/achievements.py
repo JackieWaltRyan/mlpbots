@@ -23,7 +23,8 @@ class Achievements(Cog):
     async def send_achievements(self, member, file):
         try:
             await self.BOT.get_channel(id=1007577280643604571).send(
-                content=f"**Ей! <@{member.id}> только что получил достижение!**", file=File(f"achievements/{file}.png"))
+                content=f"**Ей! <@{member.id}> только что получил достижение!**",
+                file=File(f"images/achievements/{file}.png"))
             from db.members import members
             members[member.id]["Достижения"].append(file)
             await save(file="members", content=members)
@@ -111,6 +112,9 @@ class Achievements(Cog):
                     if int(members[member.id]["Дизлайки"]) >= 1000:
                         if "dl1000" not in members[member.id]["Достижения"]:
                             await self.send_achievements(member=member, file="dl1000")
+                    if len(members[member.id]["Похищенная пони"]["Концовки"]) == 19:
+                        if "pp" not in members[member.id]["Достижения"]:
+                            await self.send_achievements(member=member, file="pp")
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
 
@@ -145,10 +149,10 @@ class Achievements(Cog):
                     files, i = [[]], 0
                     for file in members[member.id]["Достижения"]:
                         if len(files[i]) < 10:
-                            files[i].append(File(fp=f"achievements/{file}.png"))
+                            files[i].append(File(fp=f"images/achievements/{file}.png"))
                         else:
                             i += 1
-                            files.append([File(fp=f"achievements/{file}.png")])
+                            files.append([File(fp=f"images/achievements/{file}.png")])
                     for lists in files:
                         await ctx.send(content=f"Текущие достижения {member.mention}:", files=lists, delete_after=60)
         except Exception:

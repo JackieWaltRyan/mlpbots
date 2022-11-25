@@ -48,8 +48,8 @@ class Posts(Cog):
                                     "PinkiePieWannaHugYou.png")
             embed.set_footer(text=FOOTER["Текст"], icon_url=FOOTER["Ссылка"])
             await self.BOT.get_channel(id=1007577221541670982).send(embed=embed, components=[[
-                Button(label="Согласен!", style=ButtonStyle.green),
-                Button(label="Не согласен!", style=ButtonStyle.red)]])
+                Button(label="Согласен!", id="rules_yes", style=ButtonStyle.green),
+                Button(label="Не согласен!", id="rules_no", style=ButtonStyle.red)]])
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
 
@@ -68,7 +68,7 @@ class Posts(Cog):
                                     "cheer.png")
             embed.set_footer(text=FOOTER["Текст"], icon_url=FOOTER["Ссылка"])
             await self.BOT.get_channel(id=1007577223110328330).send(embed=embed, components=[[
-                Button(label="18+", style=ButtonStyle.gray)]])
+                Button(label="18+", id="roles_nsfw", style=ButtonStyle.gray)]])
             await self.post_rases.start()
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
@@ -149,27 +149,46 @@ class Posts(Cog):
     @Cog.listener()
     async def on_button_click(self, interaction):
         try:
-            if interaction.component.label == "Согласен!":
-                await interaction.send(content=f"Поздравляем! Вам выдана роль <@&{1007586288662216725}>")
+            if interaction.component.id == "rules_yes":
+                await interaction.send(content=f"Поздравляем! Вам выдана роль <@&1007586288662216725>! Теперь у вас "
+                                               f"есть полный доступ ко всем каналам сервера!\n\nВ канале "
+                                               f"<#1007577223110328330> вы можете выбрать себе Рассу и Министерство, "
+                                               f"а также получить роль 18+ для доступа к соответствующей "
+                                               f"категории.\nВ канале <#1007585194863251468> вы можете послушать "
+                                               f"пони-радио или свои любимые треки из YouTube.\nВ канале "
+                                               f"<#1007577229691207773> вы можете поиграть в интерактивную игру "
+                                               f"\"Похищенная пони\".\n\nТак же у нас есть <@&1007586346178707516>. "
+                                               f"Посмотреть все доступные вам команды бота вы можете командой "
+                                               f"**!help**.")
                 await interaction.user.add_roles(get(iterable=interaction.user.guild.roles, id=1007586288662216725))
                 await interaction.user.remove_roles(get(iterable=interaction.user.guild.roles, id=1007586287244562483))
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
         try:
-            if interaction.component.label == "Не согласен!":
-                await interaction.send(content=f"Поздравляем! Вам выдана роль <@&{1007586287244562483}>")
+            if interaction.component.id == "rules_no":
+                await interaction.send(content=f"Поздравляем! Вам выдана роль <@&1007586287244562483>! Теперь у вас "
+                                               f"есть доступ ко всем каналам сервера, но только в режиме \"**Только "
+                                               f"чтение**\"!\n\nВ канале <#1007577223110328330> вы можете выбрать "
+                                               f"себе Рассу и Министерство, а также получить роль 18+ для доступа к "
+                                               f"соответствующей категории.\nВ канале <#1007585194863251468> вы "
+                                               f"можете послушать пони-радио или свои любимые треки из YouTube.\nВ "
+                                               f"канале <#1007577229691207773> вы можете поиграть в интерактивную "
+                                               f"игру \"Похищенная пони\".\n\nТак же у нас есть "
+                                               f"<@&1007586346178707516>. Посмотреть все доступные вам команды бота "
+                                               f"вы можете командой **!help**.")
                 await interaction.user.add_roles(get(iterable=interaction.user.guild.roles, id=1007586287244562483))
                 await interaction.user.remove_roles(get(iterable=interaction.user.guild.roles, id=1007586288662216725))
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
         try:
-            if interaction.component.label == "18+":
+            if interaction.component.id == "roles_nsfw":
                 role = get(iterable=interaction.user.guild.roles, id=1007586285365502033)
                 if get(iterable=interaction.user.roles, id=1007586285365502033) is None:
-                    await interaction.send(content=f"Поздравляем! Вам выдана роль <@&{1007586285365502033}>")
+                    await interaction.send(content=f"Поздравляем! Вам выдана роль <@&1007586285365502033>! Теперь у "
+                                                   f"вас есть доступ к категории <#1007577254936719391>!")
                     await interaction.user.add_roles(role)
                 else:
-                    await interaction.send(content=f"Поздравляем! Вам убрана роль <@&{1007586285365502033}>")
+                    await interaction.send(content=f"Поздравляем! Вам убрана роль <@&1007586285365502033>!")
                     await interaction.user.remove_roles(role)
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
@@ -198,7 +217,7 @@ class Posts(Cog):
             await logs(level=LEVELS[4], message=format_exc())
         try:
             if interaction.values[0] in str(RASES) or interaction.values[0] in str(MINIS):
-                await interaction.send(content=f"Поздравляем! Вам выдана роль <@&{int(interaction.values[0])}>")
+                await interaction.send(content=f"Поздравляем! Вам выдана роль <@&{int(interaction.values[0])}>!")
                 await interaction.user.add_roles(get(iterable=interaction.user.guild.roles,
                                                      id=int(interaction.values[0])))
         except Exception:

@@ -1,3 +1,4 @@
+from PIL.Image import open
 from asyncio import run
 from discord import Embed, File
 from discord.ext.commands import command, has_permissions, Cog
@@ -62,7 +63,22 @@ class Arts(Cog):
             from db.settings import settings
             self.send_arts.change_interval(minutes=settings["Арты"]["Таймер_1"])
             from db.arts import arts  # type: ignore
-            request = get(url=f"https://4pda.to/forum/dl/post/{arts[-1]}").content
+            while True:
+                request = get(url=f"https://4pda.to/forum/dl/post/{arts[-1]}").content
+                if b"html" not in request:
+                    if len(request) > 8000000:
+                        while True:
+                            img = open(fp=BytesIO(request))
+                            new_size_ratio = 1 - ((len(request) / 8000000) / 10)
+                            img = img.resize((int(img.size[0] * new_size_ratio), int(img.size[1] * new_size_ratio)))
+                            out = BytesIO()
+                            img.save(fp=out, format="PNG")
+                            request = out.getvalue()
+                            if len(request) < 8000000:
+                                break
+                    break
+                else:
+                    arts.pop()
             await self.BOT.get_channel(id=1007577227380146267).send(file=File(fp=BytesIO(request), filename="img.png"))
             arts.pop()
             await save(file="arts", content=arts)
