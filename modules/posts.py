@@ -139,7 +139,7 @@ class Posts(Cog):
                                       "дается роль <@&1007586338238898187> и скрывается доступ ко всем каналам "
                                       "сервера. Чтобы убрать эту роль, и снова получить полный доступ к серверу, "
                                       "достаточно написать одно любое сообщение!")
-            embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1021085537802649661/1021119634268766228/"
+            embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1021085537802649661/1048666697978101760/"
                                     "sleep.png")
             embed.set_footer(text=FOOTER["Текст"], icon_url=FOOTER["Ссылка"])
             await self.BOT.get_channel(id=1007577224502837248).send(embed=embed)
