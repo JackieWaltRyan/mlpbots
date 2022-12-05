@@ -96,7 +96,7 @@ class Arts(Cog):
                     request = loads(s=get(url=f"https://derpibooru.org/api/v1/json/search/images?page=1&per_page=50&"
                                               f"filter_id=2&q={tag}").text)["images"]
                     await self.BOT.get_channel(id=1007577232975339551).send(
-                        content=f"{request[randint(1, 50)]['view_url']}")
+                        content=f"{request[randint(a=1, b=50)]['view_url']}")
                 except Exception:
                     await logs(level=LEVELS[1], message=format_exc())
         except Exception:

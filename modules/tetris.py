@@ -186,8 +186,8 @@ class Tetris(Cog):
                                         for xxx in range(5):
                                             disabled[xx][xxx] = True
                             if position is None:
-                                button_1, color = randint(0, 4), choice([ButtonStyle.green, ButtonStyle.red,
-                                                                         ButtonStyle.blue])
+                                button_1, color = randint(a=0, b=4), choice(seq=[ButtonStyle.green, ButtonStyle.red,
+                                                                                 ButtonStyle.blue])
                                 if style_2[0][button_1] == ButtonStyle.gray:
                                     style_2[0][button_1] = color
                                     position = [0, button_1, color]

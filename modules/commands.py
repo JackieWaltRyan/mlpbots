@@ -183,7 +183,7 @@ class Commands(Cog):
                         style[0].clear()
                         style[0].extend([ButtonStyle.gray, ButtonStyle.gray, ButtonStyle.gray, ButtonStyle.gray,
                                          ButtonStyle.gray])
-                        style[0][randint(0, 4)] = choice([ButtonStyle.green, ButtonStyle.red, ButtonStyle.blue])
+                        style[0][randint(a=0, b=4)] = choice(seq=[ButtonStyle.green, ButtonStyle.red, ButtonStyle.blue])
                         await post.edit(components=button(st=style))
                         await sleep(delay=1)
                 except Exception:

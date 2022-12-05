@@ -17,9 +17,9 @@ from traceback import format_exc
 BOT, SPAM, BLOCK = Bot(command_prefix=when_mentioned_or("!"), help_command=None, intents=Intents.all()), {}, []
 FOOTER = {"Текст": "Все права принадлежат пони! Весь мир принадлежит пони!",
           "Ссылка": "https://cdn.discordapp.com/attachments/1021085537802649661/1021092052487909458/NoDRM.png"}
-LEVELS, TRIGGER = {1: {"name": "DEBUG", "color": 0x0000FF}, 2: {"name": "INFO", "color": 0x008000},
-                   3: {"name": "WARNING", "color": 0xFFFF00}, 4: {"name": "ERROR", "color": 0xFFA500},
-                   5: {"name": "CRITICAL", "color": 0xFF0000}}, {"Restart": False, "Save": False}
+LEVELS, TRIGGER = {1: {"Название": "DEBUG", "Цвет": 0x0000FF}, 2: {"Название": "INFO", "Цвет": 0x008000},
+                   3: {"Название": "WARNING", "Цвет": 0xFFFF00}, 4: {"Название": "ERROR", "Цвет": 0xFFA500},
+                   5: {"Название": "CRITICAL", "Цвет": 0xFF0000}}, {"Сохранение": False, "Бэкап": False}
 TIME = str(datetime.now(tz=timezone(zone="Europe/Moscow")))[:-7].replace(" ", "_").replace("-", "_").replace(":", "_")
 
 
@@ -29,11 +29,11 @@ async def logs(level, message, file=None):
             from db.settings import settings
             if not settings["Дебаг"]:
                 return None
-        print(f"{datetime.now(tz=timezone(zone='Europe/Moscow'))} {level['name']}\n{message}")
+        print(f"{datetime.now(tz=timezone(zone='Europe/Moscow'))} {level['Название']}\n{message}")
         if not exists(path="logs"):
             makedirs(name="logs")
         with open(file=f"logs/{str(TIME)[:-6]}.log", mode="a", encoding="UTF-8") as log_file:
-            log_file.write(f"{datetime.now(tz=timezone(zone='Europe/Moscow'))} {level['name']} {message}\n")
+            log_file.write(f"{datetime.now(tz=timezone(zone='Europe/Moscow'))} {level['Название']} {message}\n")
         time, username, avatar_url = int(datetime.now(tz=timezone(zone="Europe/Moscow")).strftime("%H%M%S")), "", ""
         if 80000 <= time < 200000:
             username = "Принцесса Селестия"
@@ -47,7 +47,7 @@ async def logs(level, message, file=None):
         except Exception:
             await logs(level=LEVELS[1], message=format_exc())
         webhook = DiscordWebhook(username=username, avatar_url=avatar_url, url="")
-        webhook.add_embed(embed=DiscordEmbed(title=level["name"], description=str(message), color=level["color"]))
+        webhook.add_embed(embed=DiscordEmbed(title=level["Название"], description=str(message), color=level["Цвет"]))
         if file is not None:
             with open(file=f"backups/{file}", mode="rb") as backup_file:
                 webhook.add_file(file=backup_file.read(), filename=file)
@@ -58,11 +58,15 @@ async def logs(level, message, file=None):
 
 async def backup():
     try:
-        if not exists(path="backups"):
-            makedirs(name="backups")
-        system(command=f"zip\\x64\\7za.exe a -mx9 backups\\mlpbots_{TIME[:-6]}.zip db")
-        await logs(level=LEVELS[2], message=f"Бэкап БД создан успешно!", file=f"mlpbots_{TIME[:-6]}.zip")
+        if not TRIGGER["Бэкап"]:
+            TRIGGER["Бэкап"] = True
+            if not exists(path="backups"):
+                makedirs(name="backups")
+            system(command=f"zip\\x64\\7za.exe a -mx9 backups\\mlpbots_{TIME[:-6]}.zip db")
+            await logs(level=LEVELS[2], message=f"Бэкап БД создан успешно!", file=f"mlpbots_{TIME[:-6]}.zip")
+            TRIGGER["Бэкап"] = False
     except Exception:
+        TRIGGER["Бэкап"] = False
         await logs(level=LEVELS[4], message=format_exc())
 
 
@@ -86,8 +90,8 @@ async def autores():
 async def save(file, content):
     try:
         while True:
-            if not TRIGGER["Save"]:
-                TRIGGER["Save"] = True
+            if not TRIGGER["Сохранение"]:
+                TRIGGER["Сохранение"] = True
                 if not exists(path="db"):
                     makedirs(name="db")
                 if file in ["members"]:
@@ -96,13 +100,13 @@ async def save(file, content):
                 else:
                     with open(file=f"db/{file}.py", mode="w", encoding="UTF-8") as open_file:
                         open_file.write(f"{file} = {content}\n")
-                TRIGGER["Save"] = False
+                TRIGGER["Сохранение"] = False
                 break
             else:
                 print("Идет сохранение...")
                 await sleep(delay=1)
     except Exception:
-        TRIGGER["Save"] = False
+        TRIGGER["Сохранение"] = False
         await logs(level=LEVELS[4], message=format_exc())
 
 
@@ -117,9 +121,9 @@ async def on_ready():
     except Exception:
         await logs(level=LEVELS[4], message=format_exc())
     try:
-        bots = {868148805722337320: {"type": 3, "name": "за Эквестрией..."},
-                868150460735971328: {"type": 2, "name": "тишину ночи..."}}
-        await BOT.change_presence(activity=Activity(type=bots[BOT.user.id]["type"], name=bots[BOT.user.id]["name"]))
+        bots = {868148805722337320: {"Тип": 3, "Название": "за Эквестрией..."},
+                868150460735971328: {"Тип": 2, "Название": "тишину ночи..."}}
+        await BOT.change_presence(activity=Activity(type=bots[BOT.user.id]["Тип"], name=bots[BOT.user.id]["Название"]))
     except Exception:
         await logs(level=LEVELS[4], message=format_exc())
     try:
@@ -139,7 +143,7 @@ async def on_ready():
         error.sort()
         settings["Отключенные модули"].sort()
         if len(ok) != 0:
-            modules += "**Успешно:**\n" + "\n".join(x for x in ok)
+            modules += f"**Успешно:**\n" + "\n".join(x for x in ok)
         if len(error) != 0:
             modules += "\n\n**Неудачно:**\n" + "\n".join(x for x in error)
         if len(settings["Отключенные модули"]) > 0:
@@ -169,17 +173,17 @@ async def on_message(message):
             if message.author.id not in [868148805722337320, 868150460735971328]:
                 if message.content != "":
                     if SPAM.get(message.author.id) is None:
-                        SPAM.update({message.author.id: {"time": message.created_at, "messages": [message.content]}})
+                        SPAM.update({message.author.id: {"Время": message.created_at, "Сообщения": [message.content]}})
                     else:
-                        delta = message.created_at - SPAM[message.author.id]["time"]
-                        SPAM[message.author.id].update({"time": message.created_at})
+                        delta = message.created_at - SPAM[message.author.id]["Время"]
+                        SPAM[message.author.id].update({"Время": message.created_at})
                         if int(delta.total_seconds()) <= 15:
-                            SPAM[message.author.id]["messages"].insert(0, message.content)
+                            SPAM[message.author.id]["Сообщения"].insert(0, message.content)
                         else:
-                            SPAM[message.author.id]["messages"].clear()
-                            SPAM[message.author.id]["messages"].insert(0, message.content)
-                    if len(SPAM[message.author.id]["messages"]) >= 3:
-                        mes = SPAM[message.author.id]["messages"]
+                            SPAM[message.author.id]["Сообщения"].clear()
+                            SPAM[message.author.id]["Сообщения"].insert(0, message.content)
+                    if len(SPAM[message.author.id]["Сообщения"]) >= 3:
+                        mes = SPAM[message.author.id]["Сообщения"]
                         mes_1 = [len(mes[1]) + 1, len(mes[1]), len(mes[1]) - 1]
                         mes_2 = [len(mes[2]) + 1, len(mes[2]), len(mes[2]) - 1]
                         if token_sort_ratio(mes[0], mes[1]) >= 95 or len(mes[0]) in mes_1:
@@ -195,9 +199,16 @@ async def on_message(message):
                                 embed.set_footer(text=FOOTER["Текст"], icon_url=FOOTER["Ссылка"])
                                 await message.author.send(embed=embed)
                                 BLOCK.append(message.author.id)
-                                SPAM[message.author.id]["messages"].clear()
+                                SPAM[message.author.id]["Сообщения"].clear()
                                 await sleep(delay=60)
                                 BLOCK.remove(message.author.id)
+    except Exception:
+        await logs(level=LEVELS[4], message=format_exc())
+    try:
+        if message.author.id not in [868148805722337320, 868150460735971328]:
+            if "пон" in message.content or "pon" in message.content:
+                from db.mafia import mafia
+                await message.reply(content=choice(seq=mafia["Боты"]))
     except Exception:
         await logs(level=LEVELS[4], message=format_exc())
 
@@ -258,7 +269,7 @@ async def on_member_join(member):
                                     "Время последнего сообщения": datetime.utcnow(),
                                     "Уведомления": False,
                                     "Радуга": False,
-                                    "Бот": False,
+                                    "Бот": member.bot,
                                     "Достижения": [],
                                     "Дни": 0,
                                     "Сообщения": 0,
@@ -270,8 +281,6 @@ async def on_member_join(member):
                                     "Похищенная пони": {"Страница": "p0", "Концовки": []},
                                     "Крестики-нолики": {"Сыграно": 0, "Побед": 0, "Поражений": 0, "Процент": 0},
                                     "Тетрис": {"Сыграно": 0, "Лучший счет": 0}}})
-        if member.bot:
-            members[member.id]["Бот"] = True
         await save(file="members", content=members)
     except Exception:
         await logs(level=LEVELS[4], message=format_exc())
@@ -444,39 +453,39 @@ async def command_help(ctx):
                                                                       f"Параметр: {commands[i][3]}\n"
                                                                       f"Пример: {commands[i][4]}")
                         i += 1
-            paginator = {"group": 0, "page": 0}
+            paginator = {"Группа": 0, "Страница": 0}
 
             def menu(button):
                 if button is None:
-                    return menu_list[paginator["group"]][paginator["page"]][0]
+                    return menu_list[paginator["Группа"]][paginator["Страница"]][0]
                 if button == "previous_group":
-                    if paginator["group"] == 0:
-                        paginator.update({"group": len(menu_list) - 1, "page": 0})
-                        return menu_list[paginator["group"]][paginator["page"]][0]
+                    if paginator["Группа"] == 0:
+                        paginator.update({"Группа": len(menu_list) - 1, "Страница": 0})
+                        return menu_list[paginator["Группа"]][paginator["Страница"]][0]
                     else:
-                        paginator.update({"group": paginator["group"] - 1, "page": 0})
-                        return menu_list[paginator["group"]][paginator["page"]][0]
+                        paginator.update({"Группа": paginator["Группа"] - 1, "Страница": 0})
+                        return menu_list[paginator["Группа"]][paginator["Страница"]][0]
                 if button == "previous_page":
-                    if paginator["page"] == 0:
-                        paginator.update({"page": len(menu_list[paginator["group"]]) - 1})
-                        return menu_list[paginator["group"]][paginator["page"]][0]
+                    if paginator["Страница"] == 0:
+                        paginator.update({"Страница": len(menu_list[paginator["Группа"]]) - 1})
+                        return menu_list[paginator["Группа"]][paginator["Страница"]][0]
                     else:
-                        paginator.update({"page": paginator["page"] - 1})
-                        return menu_list[paginator["group"]][paginator["page"]][0]
+                        paginator.update({"Страница": paginator["Страница"] - 1})
+                        return menu_list[paginator["Группа"]][paginator["Страница"]][0]
                 if button == "next_page":
-                    if paginator["page"] == len(menu_list[paginator["group"]]) - 1:
-                        paginator.update({"page": 0})
-                        return menu_list[paginator["group"]][paginator["page"]][0]
+                    if paginator["Страница"] == len(menu_list[paginator["Группа"]]) - 1:
+                        paginator.update({"Страница": 0})
+                        return menu_list[paginator["Группа"]][paginator["Страница"]][0]
                     else:
-                        paginator.update({"page": paginator["page"] + 1})
-                        return menu_list[paginator["group"]][paginator["page"]][0]
+                        paginator.update({"Страница": paginator["Страница"] + 1})
+                        return menu_list[paginator["Группа"]][paginator["Страница"]][0]
                 if button == "next_group":
-                    if paginator["group"] == len(menu_list) - 1:
-                        paginator.update({"group": 0, "page": 0})
-                        return menu_list[paginator["group"]][paginator["page"]][0]
+                    if paginator["Группа"] == len(menu_list) - 1:
+                        paginator.update({"Группа": 0, "Страница": 0})
+                        return menu_list[paginator["Группа"]][paginator["Страница"]][0]
                     else:
-                        paginator.update({"group": paginator["group"] + 1, "page": 0})
-                        return menu_list[paginator["group"]][paginator["page"]][0]
+                        paginator.update({"Группа": paginator["Группа"] + 1, "Страница": 0})
+                        return menu_list[paginator["Группа"]][paginator["Страница"]][0]
 
             components, post = [[Button(emoji="⏮️", style=ButtonStyle.blue, id="previous_group"),
                                  Button(emoji="⏪", style=ButtonStyle.blue, id="previous_page"),
@@ -599,7 +608,7 @@ async def command_mods(ctx, trigger: str = None, name: str = None):
                         embed.add_field(name="Неудачно:", inline=False, value=f"\n".join(cog for cog in error))
                     if len(alert) != 0:
                         embed.add_field(name="Ошибка:", inline=False,
-                                        value="".join("Модуль \"" + cog + "\" уже включен!\n" for cog in alert))
+                                        value="\n".join(f"Модуль \"{cog}\" уже включен!" for cog in alert))
                 elif trigger == "off":
                     if name is not None:
                         if name.title() not in [x.title() for x in BOT.cogs]:
@@ -644,7 +653,7 @@ async def command_mods(ctx, trigger: str = None, name: str = None):
                         embed.add_field(name="Неудачно:", inline=False, value=f"\n".join(x for x in error))
                     if len(alert) != 0:
                         embed.add_field(name="Ошибка:", inline=False,
-                                        value="".join("Модуль \"" + x + "\" уже отключен!\n" for x in alert))
+                                        value="\n".join(f"Модуль \"{x}\" уже отключен!" for x in alert))
                 elif trigger == "res":
                     if name is not None:
                         try:

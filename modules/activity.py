@@ -38,7 +38,7 @@ class Activity(Cog):
                                                     "Время последнего сообщения": datetime.utcnow(),
                                                     "Уведомления": False,
                                                     "Радуга": False,
-                                                    "Бот": False,
+                                                    "Бот": member.bot,
                                                     "Достижения": [],
                                                     "Дни": (datetime.utcnow() - member.joined_at).days,
                                                     "Сообщения": 0,
@@ -51,13 +51,10 @@ class Activity(Cog):
                                                     "Крестики-нолики": {"Сыграно": 0, "Побед": 0, "Поражений": 0,
                                                                         "Процент": 0},
                                                     "Тетрис": {"Сыграно": 0, "Лучший счет": 0}}})
-                        if member.bot:
-                            members[member.id]["Бот"] = True
                     else:
                         members[member.id].update({"Имя аккаунта": f"{member.name}#{member.discriminator}",
-                                                   "Дата добавления на сервер": member.joined_at})
-                        if member.bot:
-                            members[member.id]["Бот"] = True
+                                                   "Дата добавления на сервер": member.joined_at,
+                                                   "Бот": member.bot})
                         if members[member.id]["Статус"]:
                             if (datetime.utcnow() - members[member.id]["Время последнего сообщения"]).days >= 7:
                                 if member.id not in [868148805722337320, 868150460735971328]:
@@ -105,9 +102,8 @@ class Activity(Cog):
                 members[member.id].update({"Дни": (datetime.utcnow() - users[member]["Дата"]).days,
                                            "Сообщения": users[member]["Сообщений"],
                                            "Упоминания": users[member]["Упоминаний"],
-                                           "Дата добавления на сервер": users[member]["Дата"]})
-                if member.bot:
-                    members[member.id]["Бот"] = True
+                                           "Дата добавления на сервер": users[member]["Дата"],
+                                           "Бот": member.bot})
             await save(file="members", content=members)
         except Exception:
             await logs(level=LEVELS[4], message=format_exc())
