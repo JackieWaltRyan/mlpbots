@@ -165,10 +165,10 @@ class Player(Cog):
                             self.vc = await self.BOT.get_channel(id=1007577295877320765).connect()
                             try:
                                 self.vc.play(FFmpegPCMAudio(source=f"{queue[key]['url']}",
-                                                            executable="ffmpeg/bin/ffmpeg.exe"))
+                                                            executable="bin/ffmpeg/bin/ffmpeg.exe"))
                             except Exception:
-                                self.vc.play(FFmpegPCMAudio(source=f"{queue[key]['url']}"))
                                 await logs(level=LEVELS[1], message=format_exc())
+                                self.vc.play(FFmpegPCMAudio(source=f"{queue[key]['url']}"))
                         except Exception:
                             await logs(level=LEVELS[1], message=format_exc())
                         from db.settings import settings
@@ -209,10 +209,10 @@ class Player(Cog):
                         self.vc = await self.BOT.get_channel(id=1007577295877320765).connect()
                         try:
                             self.vc.play(FFmpegPCMAudio(source="https://everhoof.ru/320",
-                                                        executable="ffmpeg/bin/ffmpeg.exe"))
+                                                        executable="bin/ffmpeg/bin/ffmpeg.exe"))
                         except Exception:
-                            self.vc.play(FFmpegPCMAudio(source="https://everhoof.ru/320"))
                             await logs(level=LEVELS[1], message=format_exc())
+                            self.vc.play(FFmpegPCMAudio(source="https://everhoof.ru/320"))
                     except Exception:
                         await logs(level=LEVELS[1], message=format_exc())
                     artist, title, duration = "Everhoof Radio", "Everhoof Radio", 60

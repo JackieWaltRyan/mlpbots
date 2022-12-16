@@ -20,7 +20,7 @@ FOOTER = {"Текст": "Все права принадлежат пони! Ве
 LEVELS, TRIGGER = {1: {"Название": "DEBUG", "Цвет": 0x0000FF}, 2: {"Название": "INFO", "Цвет": 0x008000},
                    3: {"Название": "WARNING", "Цвет": 0xFFFF00}, 4: {"Название": "ERROR", "Цвет": 0xFFA500},
                    5: {"Название": "CRITICAL", "Цвет": 0xFF0000}}, {"Сохранение": False, "Бэкап": False}
-TIME = str(datetime.now(tz=timezone(zone="Europe/Moscow")))[:-7].replace(" ", "_").replace("-", "_").replace(":", "_")
+TIME = str(datetime.now(tz=timezone(zone="Europe/Moscow")))[:-13].replace(" ", "_").replace("-", "_").replace(":", "_")
 
 
 async def logs(level, message, file=None):
@@ -30,59 +30,28 @@ async def logs(level, message, file=None):
             if not settings["Дебаг"]:
                 return None
         print(f"{datetime.now(tz=timezone(zone='Europe/Moscow'))} {level['Название']}\n{message}")
-        if not exists(path="logs"):
-            makedirs(name="logs")
-        with open(file=f"logs/{str(TIME)[:-6]}.log", mode="a", encoding="UTF-8") as log_file:
-            log_file.write(f"{datetime.now(tz=timezone(zone='Europe/Moscow'))} {level['Название']} {message}\n")
+        if not exists(path="temp/logs"):
+            makedirs(name="temp/logs")
+        with open(file=f"temp/logs/{TIME}.log", mode="a+", encoding="UTF-8") as log_file:
+            log_file.write(f"{datetime.now(tz=timezone(zone='Europe/Moscow'))} {level['Название']}:\n{message}\n\n")
         time, username, avatar_url = int(datetime.now(tz=timezone(zone="Europe/Moscow")).strftime("%H%M%S")), "", ""
         if 80000 <= time < 200000:
             username = "Принцесса Селестия"
             avatar_url = "https://cdn.discordapp.com/attachments/1021085537802649661/1021090387030462585/celestia.jpg"
-        if 200000 <= time < 240000 or 0 <= time < 80000:
+        else:
             username = "Принцесса Луна"
             avatar_url = "https://cdn.discordapp.com/attachments/1021085537802649661/1021090386753634454/luna.jpg"
         try:
             username = str(BOT.user.name)
             avatar_url = str(BOT.user.avatar_url)
         except Exception:
-            await logs(level=LEVELS[1], message=format_exc())
+            pass
         webhook = DiscordWebhook(username=username, avatar_url=avatar_url, url="")
         webhook.add_embed(embed=DiscordEmbed(title=level["Название"], description=str(message), color=level["Цвет"]))
         if file is not None:
-            with open(file=f"backups/{file}", mode="rb") as backup_file:
+            with open(file=f"temp/backups/{file}", mode="rb") as backup_file:
                 webhook.add_file(file=backup_file.read(), filename=file)
         webhook.execute()
-    except Exception:
-        await logs(level=LEVELS[4], message=format_exc())
-
-
-async def backup():
-    try:
-        if not TRIGGER["Бэкап"]:
-            TRIGGER["Бэкап"] = True
-            if not exists(path="backups"):
-                makedirs(name="backups")
-            system(command=f"zip\\x64\\7za.exe a -mx9 backups\\mlpbots_{TIME[:-6]}.zip db")
-            await logs(level=LEVELS[2], message=f"Бэкап БД создан успешно!", file=f"mlpbots_{TIME[:-6]}.zip")
-            TRIGGER["Бэкап"] = False
-    except Exception:
-        TRIGGER["Бэкап"] = False
-        await logs(level=LEVELS[4], message=format_exc())
-
-
-async def autores():
-    try:
-        time = int(datetime.now(tz=timezone(zone="Europe/Moscow")).strftime("%H%M%S"))
-        print(f"mlpbots: {time}")
-        if time == 80000 or time == 200000:
-            await sleep(delay=1)
-            try:
-                execl(executable, executable, "mlpbots.py")
-            except Exception:
-                await logs(level=LEVELS[1], message=format_exc())
-                execl("python/python.exe", "python/python.exe", "mlpbots.py")
-        else:
-            Timer(interval=1, function=lambda: run(main=autores())).start()
     except Exception:
         await logs(level=LEVELS[4], message=format_exc())
 
@@ -95,11 +64,11 @@ async def save(file, content):
                 if not exists(path="db"):
                     makedirs(name="db")
                 if file in ["members"]:
-                    with open(file=f"db/{file}.py", mode="w", encoding="UTF-8") as open_file:
-                        open_file.write(f"import datetime\n\n{file} = {content}\n")
+                    with open(file=f"db/{file}.py", mode="w", encoding="UTF-8") as db_file:
+                        db_file.write(f"import datetime\n\n{file} = {content}\n")
                 else:
-                    with open(file=f"db/{file}.py", mode="w", encoding="UTF-8") as open_file:
-                        open_file.write(f"{file} = {content}\n")
+                    with open(file=f"db/{file}.py", mode="w", encoding="UTF-8") as db_file:
+                        db_file.write(f"{file} = {content}\n")
                 TRIGGER["Сохранение"] = False
                 break
             else:
@@ -110,12 +79,53 @@ async def save(file, content):
         await logs(level=LEVELS[4], message=format_exc())
 
 
-@BOT.event
-async def on_ready():
+async def backup():
     try:
-        await autores()
+        if not TRIGGER["Бэкап"]:
+            TRIGGER["Бэкап"] = True
+            if not exists(path="temp/backups"):
+                makedirs(name="temp/backups")
+            date = str(datetime.now(tz=timezone(zone="Europe/Moscow")))[:-13]
+            time = date.replace(" ", "_").replace("-", "_").replace(":", "_")
+            system(command=f"bin\\zip\\x64\\7za.exe a -mx9 temp\\backups\\mlpbots_{time}.zip db")
+            await logs(level=LEVELS[2], message=f"Бэкап БД создан успешно!", file=f"mlpbots_{time}.zip")
+            TRIGGER["Бэкап"] = False
+    except Exception:
+        TRIGGER["Бэкап"] = False
+        await logs(level=LEVELS[4], message=format_exc())
+
+
+async def autores():
+    try:
+        time = int(datetime.now(tz=timezone(zone="Europe/Moscow")).strftime("%H%M%S"))
+        print(f"mlpbots: {time}")
+        if 80000 <= time < 200000:
+            try:
+                if BOT.user.id != 868148805722337320:
+                    try:
+                        execl(executable, executable, "mlpbots.py")
+                    except Exception:
+                        await logs(level=LEVELS[1], message=format_exc())
+                        execl("bin/python/python.exe", "bin/python/python.exe", "mlpbots.py")
+            except Exception:
+                await logs(level=LEVELS[1], message=format_exc())
+        else:
+            try:
+                if BOT.user.id != 868150460735971328:
+                    try:
+                        execl(executable, executable, "mlpbots.py")
+                    except Exception:
+                        await logs(level=LEVELS[1], message=format_exc())
+                        execl("bin/python/python.exe", "bin/python/python.exe", "mlpbots.py")
+            except Exception:
+                await logs(level=LEVELS[1], message=format_exc())
+        Timer(interval=1, function=lambda: run(main=autores())).start()
     except Exception:
         await logs(level=LEVELS[4], message=format_exc())
+
+
+@BOT.event
+async def on_ready():
     try:
         DiscordComponents(bot=BOT)
     except Exception:
@@ -706,7 +716,7 @@ async def command_res(ctx):
                 execl(executable, executable, "mlpbots.py")
             except Exception:
                 await logs(level=LEVELS[1], message=format_exc())
-                execl("python/python.exe", "python/python.exe", "mlpbots.py")
+                execl("bin/python/python.exe", "bin/python/python.exe", "mlpbots.py")
     except Exception:
         await logs(level=LEVELS[4], message=format_exc())
 
@@ -757,10 +767,10 @@ async def command_ban(ctx, member: Member = None):
 
 if __name__ == "__main__":
     try:
-        timer = int(datetime.now(tz=timezone(zone="Europe/Moscow")).strftime("%H%M%S"))
-        if 80000 <= timer < 200000:
+        run(main=autores())
+        if 80000 <= int(datetime.now(tz=timezone(zone="Europe/Moscow")).strftime("%H%M%S")) < 200000:
             BOT.run("")
-        if 200000 <= timer < 240000 or 0 <= timer < 80000:
+        else:
             BOT.run("")
     except Exception:
         run(main=logs(level=LEVELS[4], message=format_exc()))
