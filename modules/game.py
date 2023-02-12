@@ -1,12 +1,52 @@
 from asyncio import run
-from db.game import game
 from discord import Embed
 from discord.ext.commands import Cog
 from discord.ext.tasks import loop
 from discord_components_mirror import Button, ButtonStyle
-from mlpbots import logs, LEVELS, FOOTER, save
+from mlpbots import DB, logs, FOOTER
+from pymongo import DESCENDING
 from re import findall
 from traceback import format_exc
+
+
+async def paginator(interaction, page):
+    try:
+        components, i, db = [[]], 0, DB["game"].find_one(filter={"_id": page})
+        member = DB["members"].find_one(filter={"_id": interaction.user.id})["Похищенная пони"]["Концовки"]
+        embed = Embed(title="Похищенная пони",
+                      color=db["Цвет"],
+                      description=db["Текст"].replace("\\n", "\n"))
+        if "Изображение" in db:
+            embed.set_image(url=db["Изображение"])
+        if "Скрытые кнопки" in db and len(member) >= 17:
+            for button in db["Скрытые кнопки"]:
+                if len(components[i]) < 5:
+                    components[i].append(Button(label=button["Название"],
+                                                id=button["Страница"]))
+                else:
+                    i += 1
+                    components.append([Button(label=button["Название"],
+                                              id=button["Страница"])])
+        else:
+            for button in db["Кнопки"]:
+                if len(components[i]) < 5:
+                    components[i].append(Button(label=button["Название"],
+                                                id=button["Страница"]))
+                else:
+                    i += 1
+                    components.append([Button(label=button["Название"],
+                                              id=button["Страница"])])
+        await interaction.send(embed=embed,
+                               components=components)
+        DB["members"].update_one(filter={"_id": interaction.user.id},
+                                 update={"$set": {"Похищенная пони.Страница": page}})
+        if "Концовка" in db:
+            if db["Концовка"] not in member:
+                DB["members"].update_one(filter={"_id": interaction.user.id},
+                                         update={"$push": {"Похищенная пони.Концовки": db["Концовка"]}})
+    except Exception:
+        await logs(level="ERROR",
+                   message=format_exc())
 
 
 class Game(Cog):
@@ -15,34 +55,16 @@ class Game(Cog):
             self.BOT = bot
             self.post.start()
         except Exception:
-            run(main=logs(level=LEVELS[4], message=format_exc()))
-
-    async def paginator(self, interaction, page):
-        try:
-            embed = Embed(title="Похищенная пони", color=game[page]["Цвет"], description=game[page]["Текст"])
-            if "Изображение" in game[page]:
-                embed.set_image(url=game[page]["Изображение"])
-            from db.members import members
-            ends = len(members[interaction.user.id]["Похищенная пони"]["Концовки"])
-            if "Скрытые кнопки" in game[page] and ends >= 17:
-                await interaction.send(embed=embed, components=game[page]["Скрытые кнопки"])
-            else:
-                await interaction.send(embed=embed, components=game[page]["Кнопки"])
-            members[interaction.user.id]["Похищенная пони"]["Страница"] = page
-            if "Концовка" in game[page]:
-                if game[page]["Концовка"] not in members[interaction.user.id]["Похищенная пони"]["Концовки"]:
-                    members[interaction.user.id]["Похищенная пони"]["Концовки"].append(game[page]["Концовка"])
-            await save(file="members", content=members)
-            if ends == 19:
-                self.BOT.reload_extension(name="modules.achievements")
-        except Exception:
-            await logs(level=LEVELS[4], message=format_exc())
+            run(main=logs(level="ERROR",
+                          message=format_exc()))
 
     @loop(count=1)
     async def post(self):
         try:
-            await self.BOT.get_channel(id=1007577229691207773).purge()
-            embed = Embed(title="Похищенная пони: интерактивная игра-новелла", color=0xFF8C00,
+            channel = DB["channels"].find_one(filter={"Категория": "Игра"})["_id"]
+            await self.BOT.get_channel(id=channel).purge()
+            embed = Embed(title="Похищенная пони: интерактивная игра-новелла",
+                          color=0xFF8C00,
                           description="Привет! Если ты первый раз сталкиваешься с такой игрой, обязательно прочитай "
                                       "этот раздел. Ну а если тебе не впервой, то можешь сразу начинать игру и "
                                       "отправляться в путешествие!\n\nТо, как будет развиваться сюжет игры, "
@@ -58,66 +80,89 @@ class Game(Cog):
                                       "начинай свое приключение. Удачи!\n\nИгра сохраняется автоматически после "
                                       "каждого действия!\n\n**Автор**: Chris **Перевод**: Многорукий Удав "
                                       "**Вычитка**: Orhideous, Hariester, Haveglory **Оформление**: ponyPharmacist")
-            embed.set_image(url="https://projects.everypony.ru/purloined-pony/pics/pp000.png")
-            embed.set_footer(text=FOOTER["Текст"], icon_url=FOOTER["Ссылка"])
-            await self.BOT.get_channel(id=1007577229691207773).send(embed=embed, components=[[
-                Button(label="Начать новую игру", id="pp_newgame", style=ButtonStyle.green),
-                Button(label="Продолжить игру", id="pp_continue", style=ButtonStyle.blue),
-                Button(label="Статистика", id="pp_stats", style=ButtonStyle.gray)]])
+            embed.set_image(url="https://cdn.discordapp.com/attachments/1021085537802649661/1064578890338680973/"
+                                "pp000.png")
+            embed.set_footer(text=FOOTER["Текст"],
+                             icon_url=FOOTER["Ссылка"])
+            await self.BOT.get_channel(id=channel).send(embed=embed,
+                                                        components=[[Button(label="Начать новую игру",
+                                                                            id="pp_newgame",
+                                                                            style=ButtonStyle.green),
+                                                                     Button(label="Продолжить игру",
+                                                                            id="pp_continue",
+                                                                            style=ButtonStyle.blue),
+                                                                     Button(label="Статистика",
+                                                                            id="pp_stats",
+                                                                            style=ButtonStyle.gray)]])
         except Exception:
-            await logs(level=LEVELS[4], message=format_exc())
+            await logs(level="ERROR",
+                       message=format_exc())
 
     @Cog.listener()
     async def on_button_click(self, interaction):
         try:
             if interaction.component.id == "pp_newgame":
-                from db.members import members
-                if members[interaction.user.id]["Похищенная пони"]["Страница"] == "p0":
-                    await self.paginator(interaction=interaction, page="p1")
+                if DB["members"].find_one(filter={"_id": interaction.user.id})["Похищенная пони"]["Страница"] == "p0":
+                    await paginator(interaction=interaction,
+                                    page="p1")
                 else:
-                    await interaction.send(
-                        f"У вас обнаружена сохраненная игра! Хотите удалить ее и начать заново, или продолжить?",
-                        components=[[Button(label="Продолжить игру", id="pp_continue", style=ButtonStyle.green),
-                                     Button(label="Начать заново", id="p1", style=ButtonStyle.red)]])
+                    await interaction.send(content=f"У вас обнаружена сохраненная игра!"
+                                                   f"Хотите удалить ее и начать заново, или продолжить?",
+                                           components=[[Button(label="Продолжить игру",
+                                                               id="pp_continue",
+                                                               style=ButtonStyle.green),
+                                                        Button(label="Начать заново",
+                                                               id="p1",
+                                                               style=ButtonStyle.red)]])
         except Exception:
-            await logs(level=LEVELS[4], message=format_exc())
+            await logs(level="ERROR",
+                       message=format_exc())
         try:
             if interaction.component.id == "pp_continue":
-                from db.members import members
-                if members[interaction.user.id]["Похищенная пони"]["Страница"] != "p0":
-                    await self.paginator(interaction=interaction,
-                                         page=members[interaction.user.id]["Похищенная пони"]["Страница"])
+                page = DB["members"].find_one(filter={"_id": interaction.user.id})["Похищенная пони"]["Страница"]
+                if page != "p0":
+                    await paginator(interaction=interaction,
+                                    page=page)
                 else:
-                    await interaction.send(f"У вас нет сохраненной игры! Хотите начать новую?",
-                                           components=[Button(label="Начать новую игру", id="pp_newgame",
+                    await interaction.send(content=f"У вас нет сохраненной игры! Хотите начать новую?",
+                                           components=[Button(label="Начать новую игру",
+                                                              id="pp_newgame",
                                                               style=ButtonStyle.green)])
         except Exception:
-            await logs(level=LEVELS[4], message=format_exc())
+            await logs(level="ERROR",
+                       message=format_exc())
         try:
             if interaction.component.id == "pp_stats":
                 stats = []
-                from db.members import members
-                for member in members:
-                    if len(members[member]["Похищенная пони"]["Концовки"]) > 0:
-                        stats.append(f"<@{member}>: Пройдено {len(members[member]['Похищенная пони']['Концовки'])} "
-                                     f"из 19 концовок.")
+                for member in DB["members"].find().sort(key_or_list="Похищенная пони.Концовки",
+                                                        direction=DESCENDING):
+                    if len(member["Похищенная пони"]["Концовки"]) > 0:
+                        stats.append(f"<@{member['_id']}>: "
+                                     f"Пройдено {len(member['Похищенная пони']['Концовки'])} из 19 концовок.")
                 if len(stats) == 0:
                     stats.append("Сейчас нет пони, которые прошли хотя бы одну концовку.")
-                embed = Embed(title="Статистика прохождения:", color=interaction.user.color,
+                embed = Embed(title="Статистика прохождения:",
+                              color=interaction.user.color,
                               description="\n\n".join([x for x in stats]))
-                embed.set_footer(text=FOOTER["Текст"], icon_url=FOOTER["Ссылка"])
+                embed.set_footer(text=FOOTER["Текст"],
+                                 icon_url=FOOTER["Ссылка"])
                 await interaction.send(embed=embed)
         except Exception:
-            await logs(level=LEVELS[4], message=format_exc())
+            await logs(level="ERROR",
+                       message=format_exc())
         try:
-            if len(findall(pattern=r"p\d+", string=interaction.component.id)) != 0:
-                await self.paginator(interaction=interaction, page=interaction.component.id)
+            if len(findall(pattern=r"p\d+",
+                           string=interaction.component.id)) != 0:
+                await paginator(interaction=interaction,
+                                page=interaction.component.id)
         except Exception:
-            await logs(level=LEVELS[4], message=format_exc())
+            await logs(level="ERROR",
+                       message=format_exc())
 
 
 def setup(bot):
     try:
         bot.add_cog(cog=Game(bot=bot))
     except Exception:
-        run(main=logs(level=LEVELS[4], message=format_exc()))
+        run(main=logs(level="ERROR",
+                      message=format_exc()))
