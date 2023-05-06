@@ -1,9 +1,11 @@
 from asyncio import run
+from traceback import format_exc
+
 from discord import Embed
 from discord.ext.commands import Cog
 from discord.ext.tasks import loop
+
 from mlpbots import logs, DB
-from traceback import format_exc
 
 
 class Embeds(Cog):

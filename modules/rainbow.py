@@ -1,10 +1,12 @@
 from asyncio import run
+from traceback import format_exc
+
 from discord import Embed
 from discord.ext.commands import Cog, command
 from discord.ext.tasks import loop
 from discord.utils import get
+
 from mlpbots import DB, logs, FOOTER
-from traceback import format_exc
 
 
 class Rainbow(Cog):

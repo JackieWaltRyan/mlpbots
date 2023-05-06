@@ -1,12 +1,14 @@
 from asyncio import run
+from re import findall
+from traceback import format_exc
+
 from discord import Embed
 from discord.ext.commands import Cog
 from discord.ext.tasks import loop
 from discord_components_mirror import Button, ButtonStyle
-from mlpbots import DB, logs, FOOTER
 from pymongo import DESCENDING
-from re import findall
-from traceback import format_exc
+
+from mlpbots import DB, logs, FOOTER
 
 
 async def paginator(interaction, page):

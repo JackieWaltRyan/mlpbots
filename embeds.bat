@@ -1,1 +1,1 @@
-bin\python\python.exe embeds.py
+python embeds.py

@@ -1,10 +1,13 @@
-from sys import executable
-
 from datetime import datetime
-from discord_webhook import DiscordEmbed, DiscordWebhook
 from functools import partial
 from os import makedirs, execl
 from os.path import exists
+from re import match, IGNORECASE
+from sys import executable
+from threading import Timer
+from traceback import format_exc
+
+from discord_webhook import DiscordEmbed, DiscordWebhook
 from pymongo import MongoClient
 from pytz import timezone
 from pywebio import config, start_server
@@ -13,10 +16,7 @@ from pywebio.output import put_html, put_text, put_scope, put_markdown, put_butt
 from pywebio.pin import pin_on_change, put_select, put_input, put_textarea, put_checkbox
 from pywebio.session import local
 from pywebio_battery import get_query
-from re import match, IGNORECASE
 from requests import post, get
-from threading import Timer
-from traceback import format_exc
 
 DB, LEVELS = MongoClient()["mlpbots"], {"DEBUG": 0x0000FF,
                                         "INFO": 0x008000,
@@ -70,7 +70,7 @@ def restart():
         except Exception:
             logs(level="DEBUG",
                  message=format_exc())
-            execl("bin/python/python.exe", "bin/python/python.exe", "embeds.py")
+            execl("python", "python", "embeds.py")
     except Exception:
         logs(level="ERROR",
              message=format_exc())
@@ -247,24 +247,24 @@ def change_field(content, value):
             remove(scope=content)
             local["Embed"]["fields"].pop(content[6:])
         if "name" in value:
-            local["Embed"]["fields"][value[4:]]["name"] = content
-            if local["Embed"]["fields"][value[4:]]["name"] == "":
-                local["Embed"]["fields"][value[4:]].pop("name")
+            local["Embed"]["fields"][value[5:]]["name"] = content
+            if local["Embed"]["fields"][value[5:]]["name"] == "":
+                local["Embed"]["fields"][value[5:]].pop("name")
                 toast(content="Значение \"Название\" не может быть пустым!",
                       duration=5,
                       color="error")
         if "value" in value:
-            local["Embed"]["fields"][value[5:]]["value"] = content
-            if local["Embed"]["fields"][value[5:]]["value"] == "":
-                local["Embed"]["fields"][value[5:]].pop("value")
+            local["Embed"]["fields"][value[6:]]["value"] = content
+            if local["Embed"]["fields"][value[6:]]["value"] == "":
+                local["Embed"]["fields"][value[6:]].pop("value")
                 toast(content="Значение \"Значение\" не может быть пустым!",
                       duration=5,
                       color="error")
         if "inline" in value:
             if content:
-                local["Embed"]["fields"][value[6:]]["inline"] = True
+                local["Embed"]["fields"][value[7:]]["inline"] = True
             else:
-                local["Embed"]["fields"][value[6:]].pop("inline")
+                local["Embed"]["fields"][value[7:]].pop("inline")
         if "fields" in local["Embed"]:
             if len(local["Embed"]["fields"]) == 0:
                 local["Embed"].pop("fields")
@@ -449,15 +449,20 @@ def main():
     try:
         db = DB["embeds"].find_one(filter={"_id": "Embeds"})
         if get_query(name="code"):
-            bots = {868148805722337320: "",
-                    868150460735971328: ""}
-            access_token = post(url="https://discord.com/api/oauth2/token",
-                                data={"client_id": str(db["Бот"]),
-                                      "client_secret": f"{bots[db['Бот']]}",
-                                      "grant_type": "authorization_code",
-                                      "code": get_query(name="code"),
-                                      "redirect_uri": "http://129.148.60.73",
-                                      "scope": "identify"}).json()
+            bots, access_token = {868148805722337320: "djho6UhaPvOTPPBGJ9AJt99aMCLapLN3",
+                                  868150460735971328: "nqqbaLUvznCHahHCaFZ9M7kmcp9tmUlc"}, {}
+            try:
+                access_token = post(url="https://discord.com/api/oauth2/token",
+                                    data={"client_id": str(db["Бот"]),
+                                          "client_secret": f"{bots[db['Бот']]}",
+                                          "grant_type": "authorization_code",
+                                          "code": get_query(name="code"),
+                                          "redirect_uri": "http://129.148.60.73",
+                                          "scope": "identify"}).json()
+            except Exception:
+                put_html(html=f"<meta http-equiv=\"refresh\" content=\"0;URL='https://discord.com/api/oauth2/authorize?"
+                              f"client_id={db['Бот']}&redirect_uri=http://129.148.60.73&response_type=code&"
+                              f"scope=identify'\"/>")
             user_object = get(url="https://discord.com/api/users/@me",
                               headers={"Authorization": f"Bearer {access_token.get('access_token')}"}).json()
             if "id" in user_object:

@@ -1,15 +1,16 @@
-from time import time
-
-from asyncio import sleep, run
+from asyncio import run, sleep
 from datetime import timedelta
+from json import loads
+from time import time
+from traceback import format_exc
+
 from discord import Embed, FFmpegPCMAudio
 from discord.ext.commands import Cog
 from discord.ext.tasks import loop
 from discord_components_mirror import Button, ButtonStyle
-from json import loads
-from mlpbots import DB, logs, FOOTER
 from requests import get
-from traceback import format_exc
+
+from mlpbots import DB, logs, FOOTER
 
 
 async def subscribe(interaction):
@@ -79,7 +80,7 @@ class Player(Cog):
             await logs(level="ERROR",
                        message=format_exc())
 
-    @loop(count=1)
+    @loop()
     async def player(self):
         try:
             while True:
@@ -160,8 +161,11 @@ class Player(Cog):
                                                                                     Button(emoji="⚙",
                                                                                            id="player_settings",
                                                                                            style=ButtonStyle.blue)]])
-                    DB["settings"].update_one(filter={"_id": "Плеер"},
-                                              update={"$set": {"Пост": post.id}})
+                    while True:
+                        DB["settings"].update_one(filter={"_id": "Плеер"},
+                                                  update={"$set": {"Пост": post.id}})
+                        if DB["settings"].find_one(filter={"_id": "Плеер"})["Пост"] == post.id:
+                            break
                 except Exception:
                     await logs(level="DEBUG",
                                message=format_exc())

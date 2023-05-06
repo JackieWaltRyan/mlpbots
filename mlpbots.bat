@@ -1,1 +1,1 @@
-bin\python\python.exe mlpbots.py
+python mlpbots.py

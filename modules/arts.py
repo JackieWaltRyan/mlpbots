@@ -1,14 +1,16 @@
-from PIL.Image import open
 from asyncio import run
+from io import BytesIO
+from re import findall
+from traceback import format_exc
+
+from PIL.Image import open
 from discord import File
 from discord.ext.commands import Cog
 from discord.ext.tasks import loop
-from io import BytesIO
-from mlpbots import DB, logs
 from pymongo import ASCENDING
-from re import findall
 from requests import get
-from traceback import format_exc
+
+from mlpbots import DB, logs
 
 
 class Arts(Cog):

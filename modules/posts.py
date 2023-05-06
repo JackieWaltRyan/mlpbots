@@ -1,31 +1,37 @@
 from asyncio import run
+from traceback import format_exc
+
 from discord import Embed
 from discord.ext.commands import Cog
 from discord.ext.tasks import loop
 from discord.utils import get
 from discord_components_mirror import Button, ButtonStyle, SelectOption, Select
-from mlpbots import DB, logs, FOOTER
 from pymongo import ASCENDING
-from traceback import format_exc
+
+from mlpbots import DB, logs, FOOTER
 
 
 class Posts(Cog):
     def __init__(self, bot):
         try:
             self.BOT = bot
-            self.rases = [x["_id"] for x in DB["roles"].find({"Категория": "Расы"})]
-            self.minis = [x["_id"] for x in DB["roles"].find({"Категория": "Министерства"})]
-            self.post_rules.start()
-            self.post_roles.start()
+            self.channel_rules = DB["channels"].find_one(filter={"Категория": "Правила"})["_id"]
+            self.channel_roles = DB["channels"].find_one(filter={"Категория": "Роли"})["_id"]
+            self.channel_player = DB["channels"].find_one(filter={"Категория": "Плеер 1"})["_id"]
+            self.channel_game = DB["channels"].find_one(filter={"Категория": "Игра"})["_id"]
+            self.role_pony = DB["roles"].find_one(filter={"Категория": "Пони"})["_id"]
+            self.role_bots = DB["roles"].find_one(filter={"Категория": "Принцессы"})["_id"]
+            self.role_gamer = DB["roles"].find_one(filter={"Категория": "Игрок"})["_id"]
+            self.role_nsfw = DB["roles"].find_one(filter={"Категория": "18+"})["_id"]
+            self.role_rases = [x["_id"] for x in DB["roles"].find({"Категория": "Расы"})]
+            self.role_minis = [x["_id"] for x in DB["roles"].find({"Категория": "Министерства"})]
+            self.posts.start()
         except Exception:
             run(main=logs(level="ERROR",
                           message=format_exc()))
 
-    @loop(count=1)
     async def post_rules(self):
         try:
-            channel = DB["channels"].find_one(filter={"Категория": "Правила"})["_id"]
-            await self.BOT.get_channel(id=channel).purge()
             embed = Embed(title="Приветствуем тебя милая поняшка в нашем клубе!",
                           color=0x008000,
                           description="Несмотря на название, этот клуб создан для простого и дружественного общения "
@@ -42,47 +48,20 @@ class Posts(Cog):
                                     "PinkiePieWannaHugYou.png")
             embed.set_footer(text=FOOTER["Текст"],
                              icon_url=FOOTER["Ссылка"])
-            await self.BOT.get_channel(id=channel).send(embed=embed,
-                                                        components=[[Button(label="Согласен!",
-                                                                            id="rules_yes",
-                                                                            style=ButtonStyle.green),
-                                                                     Button(label="Не согласен!",
-                                                                            id="rules_no",
-                                                                            style=ButtonStyle.red)]])
+            await self.BOT.get_channel(id=self.channel_rules).send(embed=embed,
+                                                                   components=[[Button(label="Согласен!",
+                                                                                       id="rules_yes",
+                                                                                       style=ButtonStyle.green),
+                                                                                Button(label="Не согласен!",
+                                                                                       id="rules_no",
+                                                                                       style=ButtonStyle.red)]])
         except Exception:
             await logs(level="ERROR",
                        message=format_exc())
 
-    @loop(count=1)
-    async def post_roles(self):
-        try:
-            channel = DB["channels"].find_one(filter={"Категория": "Роли"})["_id"]
-            await self.BOT.get_channel(id=channel).purge()
-            embed = Embed(title="На нашем сервере есть 4 основных роли:",
-                          color=0xFFFF00,
-                          description="<@&1007586359067803729> - пони, которые управляют сервером.\n\n"
-                                      "<@&1007586288662216725> - основной табун, добрые пони сервера.\n\n"
-                                      "<@&1007586287244562483> - кто несогласен с правилами, наблюдают.\n\n"
-                                      "<@&1007586285365502033> - открывает доступ в мир Дискорда. Чтобы получить "
-                                      "эту роль, нажмите на кнопку под этим сообщением.")
-            embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1021085537802649661/1021146958095712317/"
-                                    "cheer.png")
-            embed.set_footer(text=FOOTER["Текст"],
-                             icon_url=FOOTER["Ссылка"])
-            await self.BOT.get_channel(id=channel).send(embed=embed,
-                                                        components=[[Button(label="18+",
-                                                                            id="roles_nsfw",
-                                                                            style=ButtonStyle.gray)]])
-            await self.post_rases.start()
-        except Exception:
-            await logs(level="ERROR",
-                       message=format_exc())
-
-    @loop(count=1)
     async def post_rases(self):
         try:
-            channel = DB["channels"].find_one(filter={"Категория": "Роли"})["_id"]
-            description, options, i = [], [[SelectOption(label="Без расы (убрать роль)",
+            description, options, i = [], [[SelectOption(label="🚫 Без расы (убрать роль)",
                                                          value="Без расы")]], 0
             for role in DB["roles"].find({"Категория": "Расы"}).sort(key_or_list="Название",
                                                                      direction=ASCENDING):
@@ -92,29 +71,26 @@ class Posts(Cog):
                                                    value=str(role["_id"])))
                 else:
                     i += 1
-                    options.append([SelectOption(label="Без расы (убрать роль)",
+                    options.append([SelectOption(label="🚫 Без расы (убрать роль)",
                                                  value="Без расы"),
                                     SelectOption(label=role["Название"],
                                                  value=str(role["_id"]))])
-            embed = Embed(title="А еще у нас есть расы:",
+            embed = Embed(title="Расы:",
                           color=0xFFA500,
                           description="".join([x for x in description]))
             embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1021085537802649661/1021117457483694161/"
                                     "chars.png")
             embed.set_footer(text=FOOTER["Текст"],
                              icon_url=FOOTER["Ссылка"])
-            await self.BOT.get_channel(id=channel).send(embed=embed,
-                                                        components=[Select(options=x) for x in options])
-            await self.post_minis.start()
+            await self.BOT.get_channel(id=self.channel_roles).send(embed=embed,
+                                                                   components=[Select(options=x) for x in options])
         except Exception:
             await logs(level="ERROR",
                        message=format_exc())
 
-    @loop(count=1)
     async def post_minis(self):
         try:
-            channel = DB["channels"].find_one(filter={"Категория": "Роли"})["_id"]
-            description, options, i = [], [[SelectOption(label="Без министерства (убрать роль)",
+            description, options, i = [], [[SelectOption(label="🚫 Без министерства (убрать роль)",
                                                          value="Без министерства")]], 0
             for role in DB["roles"].find({"Категория": "Министерства"}).sort(key_or_list="Название",
                                                                              direction=ASCENDING):
@@ -124,19 +100,54 @@ class Posts(Cog):
                                                    value=str(role["_id"])))
                 else:
                     i += 1
-                    options.append([SelectOption(label="Без министерства (убрать роль)",
+                    options.append([SelectOption(label="🚫 Без министерства (убрать роль)",
                                                  value="Без министерства"),
                                     SelectOption(label=role["Название"],
                                                  value=str(role["_id"]))])
-            embed = Embed(title="И министерства:",
+            embed = Embed(title="Министерства:",
                           color=0xFF0000,
                           description="".join([x for x in description]))
             embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1021085537802649661/1021117457102016512/"
                                     "mine6.png")
             embed.set_footer(text=FOOTER["Текст"],
                              icon_url=FOOTER["Ссылка"])
-            await self.BOT.get_channel(id=channel).send(embed=embed,
-                                                        components=[Select(options=x) for x in options])
+            await self.BOT.get_channel(id=self.channel_roles).send(embed=embed,
+                                                                   components=[Select(options=x) for x in options])
+        except Exception:
+            await logs(level="ERROR",
+                       message=format_exc())
+
+    async def post_roles(self):
+        try:
+            embed = Embed(title="Разное:",
+                          color=0xFFFF00,
+                          description=f"<@&{self.role_gamer}> - для тех, кто активно играет в игру.\n\n"
+                                      f"<@&{self.role_nsfw}> - для тех, кто старше 18 и не боится R34.\n\n"
+                                      f"Чтобы получить или убрать роль, нажмите на кнопку под сообщением.")
+            embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/1021085537802649661/1021146958095712317/"
+                                    "cheer.png")
+            embed.set_footer(text=FOOTER["Текст"],
+                             icon_url=FOOTER["Ссылка"])
+            await self.BOT.get_channel(id=self.channel_roles).send(embed=embed,
+                                                                   components=[[Button(label="🦄 Игроки",
+                                                                                       id="roles_gamer",
+                                                                                       style=ButtonStyle.gray),
+                                                                                Button(label="🦄 18+",
+                                                                                       id="roles_nsfw",
+                                                                                       style=ButtonStyle.gray)]])
+        except Exception:
+            await logs(level="ERROR",
+                       message=format_exc())
+
+    @loop(count=1)
+    async def posts(self):
+        try:
+            await self.BOT.get_channel(id=self.channel_rules).purge()
+            await self.post_rules()
+            await self.BOT.get_channel(id=self.channel_roles).purge()
+            await self.post_rases()
+            await self.post_minis()
+            await self.post_roles()
         except Exception:
             await logs(level="ERROR",
                        message=format_exc())
@@ -145,55 +156,54 @@ class Posts(Cog):
     async def on_button_click(self, interaction):
         try:
             if interaction.component.id == "rules_yes":
-                await interaction.send(content=f"Поздравляем! Вам выдана роль <@&1007586288662216725>! Теперь у вас "
+                await interaction.send(content=f"Поздравляем! Вам выдана роль <@&{self.role_pony}>! Теперь у вас "
                                                f"есть полный доступ ко всем каналам сервера!\n\nВ канале "
-                                               f"<#1007577223110328330> вы можете выбрать себе Рассу и Министерство, "
-                                               f"а также получить роль 18+ для доступа к соответствующей "
-                                               f"категории.\nВ канале <#1007585194863251468> вы можете послушать "
-                                               f"пони-радио или свои любимые треки из YouTube.\nВ канале "
-                                               f"<#1007577229691207773> вы можете поиграть в интерактивную игру "
-                                               f"\"Похищенная пони\".\n\nТак же у нас есть <@&1007586346178707516>. "
-                                               f"Посмотреть все доступные вам команды бота вы можете командой "
-                                               f"**!help**.")
+                                               f"<#{self.channel_roles}> вы можете выбрать себе Рассу, Министерство, "
+                                               f"или получить другие роли.\nВ канале <#{self.channel_player}> вы "
+                                               f"можете послушать пони-радио.\nВ канале <#{self.channel_game}> вы "
+                                               f"можете поиграть в интерактивную игру \"Похищенная пони\".\n\nТак же "
+                                               f"у нас есть <@&{self.role_bots}>. Посмотреть все доступные вам "
+                                               f"команды бота вы можете командой **!help**.")
                 await interaction.user.add_roles(get(iterable=interaction.user.guild.roles,
-                                                     id=DB["roles"].find_one(filter={"Категория": "Пони"})["_id"]))
-                await interaction.user.remove_roles(get(iterable=interaction.user.guild.roles,
-                                                        id=DB["roles"].find_one(filter={"Категория": "Духи"})["_id"]))
+                                                     id=self.role_pony))
         except Exception:
             await logs(level="ERROR",
                        message=format_exc())
         try:
             if interaction.component.id == "rules_no":
-                await interaction.send(content=f"Поздравляем! Вам выдана роль <@&1007586287244562483>! Теперь у вас "
-                                               f"есть доступ ко всем каналам сервера, но только в режиме \"**Только "
-                                               f"чтение**\"!\n\nВ канале <#1007577223110328330> вы можете выбрать "
-                                               f"себе Рассу и Министерство, а также получить роль 18+ для доступа к "
-                                               f"соответствующей категории.\nВ канале <#1007585194863251468> вы "
-                                               f"можете послушать пони-радио или свои любимые треки из YouTube.\nВ "
-                                               f"канале <#1007577229691207773> вы можете поиграть в интерактивную "
-                                               f"игру \"Похищенная пони\".\n\nТак же у нас есть "
-                                               f"<@&1007586346178707516>. Посмотреть все доступные вам команды бота "
-                                               f"вы можете командой **!help**.")
-                await interaction.user.add_roles(get(iterable=interaction.user.guild.roles,
-                                                     id=DB["roles"].find_one(filter={"Категория": "Духи"})["_id"]))
+                await interaction.send(content=f"Извините, но если вы не согласны с правилами, то вы не можете "
+                                               f"получить доступ к серверу!")
                 await interaction.user.remove_roles(get(iterable=interaction.user.guild.roles,
-                                                        id=DB["roles"].find_one(filter={"Категория": "Пони"})["_id"]))
+                                                        id=self.role_pony))
+        except Exception:
+            await logs(level="ERROR",
+                       message=format_exc())
+        try:
+            if interaction.component.id == "roles_gamer":
+                if get(iterable=interaction.user.roles,
+                       id=self.role_gamer) is None:
+                    await interaction.send(content=f"Поздравляем! Вам выдана роль <@&{self.role_gamer}>!")
+                    await interaction.user.add_roles(get(iterable=interaction.user.guild.roles,
+                                                         id=self.role_gamer))
+                else:
+                    await interaction.send(content=f"Поздравляем! Вам убрана роль <@&{self.role_gamer}>!")
+                    await interaction.user.remove_roles(get(iterable=interaction.user.guild.roles,
+                                                            id=self.role_gamer))
         except Exception:
             await logs(level="ERROR",
                        message=format_exc())
         try:
             if interaction.component.id == "roles_nsfw":
-                role = DB["roles"].find_one(filter={"Категория": "18+"})["_id"]
                 if get(iterable=interaction.user.roles,
-                       id=role) is None:
-                    await interaction.send(content=f"Поздравляем! Вам выдана роль <@&1007586285365502033>! "
+                       id=self.role_nsfw) is None:
+                    await interaction.send(content=f"Поздравляем! Вам выдана роль <@&{self.role_nsfw}>! "
                                                    f"Теперь у вас есть доступ к категории <#1007577254936719391>!")
                     await interaction.user.add_roles(get(iterable=interaction.user.guild.roles,
-                                                         id=role))
+                                                         id=self.role_nsfw))
                 else:
-                    await interaction.send(content=f"Поздравляем! Вам убрана роль <@&1007586285365502033>!")
+                    await interaction.send(content=f"Поздравляем! Вам убрана роль <@&{self.role_nsfw}>!")
                     await interaction.user.remove_roles(get(iterable=interaction.user.guild.roles,
-                                                            id=role))
+                                                            id=self.role_nsfw))
         except Exception:
             await logs(level="ERROR",
                        message=format_exc())
@@ -203,7 +213,7 @@ class Posts(Cog):
         try:
             if interaction.values[0] == "Без расы":
                 await interaction.send(content="Поздравляем! Вам убраны все Расы!")
-                for role in self.rases:
+                for role in self.role_rases:
                     await interaction.user.remove_roles(get(iterable=interaction.user.guild.roles,
                                                             id=role))
         except Exception:
@@ -212,15 +222,15 @@ class Posts(Cog):
         try:
             if interaction.values[0] == "Без министерства":
                 await interaction.send(content="Поздравляем! Вам убраны все Министерства!")
-                for role in self.minis:
+                for role in self.role_minis:
                     await interaction.user.remove_roles(get(iterable=interaction.user.guild.roles,
                                                             id=role))
         except Exception:
             await logs(level="ERROR",
                        message=format_exc())
         try:
-            if interaction.values[0] in str(self.rases) or interaction.values[0] in str(self.minis):
-                await interaction.send(content=f"Поздравляем! Вам выдана роль <@&{int(interaction.values[0])}>!")
+            if interaction.values[0] in str(self.role_rases) or interaction.values[0] in str(self.role_minis):
+                await interaction.send(content=f"Поздравляем! Вам выдана роль <@&{interaction.values[0]}>!")
                 await interaction.user.add_roles(get(iterable=interaction.user.guild.roles,
                                                      id=int(interaction.values[0])))
         except Exception:

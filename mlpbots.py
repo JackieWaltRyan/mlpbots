@@ -1,21 +1,21 @@
-from sys import executable
-
 from asyncio import run, sleep
 from datetime import datetime, timedelta
+from functools import partial
+from os import listdir, makedirs, execl
+from os.path import exists
+from random import choice
+from subprocess import run as s_run
+from sys import executable
+from threading import Timer
+from traceback import format_exc
+
 from discord import Activity, Embed, Intents, Member
 from discord.ext.commands import Bot, has_permissions, when_mentioned_or
 from discord_components_mirror import Button, ButtonStyle, DiscordComponents
 from discord_webhook import DiscordEmbed, AsyncDiscordWebhook
-from functools import partial
 from fuzzywuzzy.fuzz import token_sort_ratio
-from os import listdir, makedirs, execl
-from os.path import exists
 from pymongo import MongoClient
 from pytz import timezone
-from random import choice
-from subprocess import run as s_run
-from threading import Timer
-from traceback import format_exc
 
 BOT, DB, LEVELS, TRIGGER = Bot(command_prefix=when_mentioned_or("!"),
                                help_command=None,
@@ -113,7 +113,7 @@ async def restart():
         except Exception:
             await logs(level="DEBUG",
                        message=format_exc())
-            execl("bin/python/python.exe", "bin/python/python.exe", "mlpbots.py")
+            execl("python", "python", "mlpbots.py")
     except Exception:
         await logs(level="ERROR",
                    message=format_exc())
@@ -211,6 +211,7 @@ async def mods(trigger, name, ok, error):
                 error.append(name.title())
                 await logs(level="DEBUG",
                            message=format_exc())
+        return ok, error
     except Exception:
         await logs(level="ERROR",
                    message=format_exc())
@@ -283,10 +284,10 @@ async def on_message(message):
         await logs(level="ERROR",
                    message=format_exc())
     try:
-        db = DB["members"].find_one(filter={"_id": message.author.id})["Антиспам"]
+        db = DB["members"].find_one(filter={"_id": message.author.id})
         if db is not None:
-            if db["Триггер"]:
-                if message.created_at <= db["Блокировка"]:
+            if db["Антиспам"]["Триггер"]:
+                if message.created_at <= db["Антиспам"]["Блокировка"]:
                     try:
                         await message.delete()
                     except Exception:
@@ -294,8 +295,8 @@ async def on_message(message):
                                    message=format_exc())
                     DB["members"].update_one(filter={"_id": message.author.id},
                                              update={"$inc": {"Антиспам.Количество": 1}})
-                    if db["Количество"] >= 3:
-                        block = db["Блокировка"] + timedelta(minutes=1)
+                    if db["Антиспам"]["Количество"] >= 3:
+                        block = db["Антиспам"]["Блокировка"] + timedelta(minutes=1)
                         DB["members"].update_one(filter={"_id": message.author.id},
                                                  update={"$set": {"Антиспам.Блокировка": block,
                                                                   "Антиспам.Количество": 0}})
@@ -314,8 +315,8 @@ async def on_message(message):
                                              update={"$set": {"Антиспам.Триггер": False}})
             else:
                 if message.author.id not in [868148805722337320, 868150460735971328] and message.content != "":
-                    messages = db["Сообщения"]
-                    if (message.created_at - db["Время"]).seconds <= 15:
+                    messages = db["Антиспам"]["Сообщения"]
+                    if (message.created_at - db["Антиспам"]["Время"]).seconds <= 15:
                         messages.insert(0, message.content)
                         if len(messages) == 4:
                             messages.pop()
@@ -404,7 +405,9 @@ async def on_member_join(member):
                                                "Радуга": False,
                                                "Похищенная пони": {"Страница": "p0",
                                                                    "Концовки": []},
-                                               "Антиспам": {"Сообщения": [],
+                                               "Антиспам": {"Триггер": False,
+                                                            "Сообщения": [],
+                                                            "Время": datetime.utcnow(),
                                                             "Блокировка": datetime.utcnow(),
                                                             "Количество": 0}})
         else:

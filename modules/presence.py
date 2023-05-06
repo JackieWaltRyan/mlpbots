@@ -1,9 +1,11 @@
 from asyncio import run
+from traceback import format_exc
+
 from discord.ext.commands import Cog
 from discord.ext.tasks import loop
-from mlpbots import logs, BOTS
 from pypresence import AioPresence
-from traceback import format_exc
+
+from mlpbots import logs, BOTS
 
 
 class Presence(Cog):

@@ -1,9 +1,11 @@
 from asyncio import run
 from datetime import datetime
+from traceback import format_exc
+
 from discord.ext.commands import Cog
 from discord.ext.tasks import loop
+
 from mlpbots import DB, logs
-from traceback import format_exc
 
 
 class Activity(Cog):
