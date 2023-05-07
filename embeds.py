@@ -65,12 +65,7 @@ def logs(level, message):
 
 def restart():
     try:
-        try:
-            execl(executable, executable, "embeds.py")
-        except Exception:
-            logs(level="DEBUG",
-                 message=format_exc())
-            execl("python", "python", "embeds.py")
+        execl(executable, "python", "embeds.py")
     except Exception:
         logs(level="ERROR",
              message=format_exc())

@@ -108,12 +108,7 @@ async def backup():
 
 async def restart():
     try:
-        try:
-            execl(executable, executable, "mlpbots.py")
-        except Exception:
-            await logs(level="DEBUG",
-                       message=format_exc())
-            execl("python", "python", "mlpbots.py")
+        execl(executable, "python", "mlpbots.py")
     except Exception:
         await logs(level="ERROR",
                    message=format_exc())
